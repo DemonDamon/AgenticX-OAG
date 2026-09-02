@@ -1,13 +1,13 @@
 agx_bundle: "1.0"
-name: "oag-deep-research"
-version: "0.1.0"
+name: "agenticx-oag"
+version: "0.2.0"
 description: "Ontology Augmented Generation deep-research method for evidence-grounded, auditable research."
 author: "Manus AI"
 license: "Apache-2.0"
 
 components:
   skills:
-    - path: "skills/oag-deep-research/SKILL.md"
+    - path: "skills/agenticx-oag/SKILL.md"
       description: "Evidence-grounded OAG deep-research protocol."
   avatars:
     - name: "oag-researcher"

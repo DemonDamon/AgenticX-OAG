@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/DemonDamon/oag-deep-research/schemas/claim-ledger.schema.json",
+  "$id": "https://github.com/DemonDamon/agenticx-oag/schemas/claim-ledger.schema.json",
   "title": "OAG Claim Ledger",
   "description": "A provenance-first ledger of claims produced by ontology-aware deep research.",
   "type": "object",

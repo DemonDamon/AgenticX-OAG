@@ -1,8 +1,8 @@
-# OAG Deep Research
+# AgenticX-OAG
 
 > **面向 AgenticX 的本体增强生成（Ontology Augmented Generation, OAG）深度调研包。**
 
-`oag-deep-research` 将深度调研从“搜集并总结网页”扩展为可验证的**对象、关系、证据、推断与行动边界**。其目标是把复杂议题沉淀为可审计、可复用、可由 AgenticX 调用的研究资产，而非只生成一次性的文本结论。
+`AgenticX-OAG` 将深度调研从“搜集并总结网页”扩展为可验证的**对象、关系、证据、推断与行动边界**。其目标是把复杂议题沉淀为可审计、可复用、可由 AgenticX 调用的研究资产，而非只生成一次性的文本结论。
 
 Palantir 将 OAG 描述为一种以本体为锚点、较 RAG 更强调决策的方式：模型可结合数据、确定性逻辑与受控行动，同时将结论追溯至业务对象与来源。[1] AgenticX 支持以 AGX Bundle 打包技能、记忆模板、角色预设和 MCP 配置，因此本仓库以无外部密钥、可离线审计的 Bundle 形式发布研究方法。[2] [3]
 
@@ -37,11 +37,11 @@ Palantir 将 OAG 描述为一种以本体为锚点、较 RAG 更强调决策的�
 from pathlib import Path
 from agenticx.extensions.installer import install_bundle
 
-result = install_bundle(Path("/path/to/oag-deep-research"))
+result = install_bundle(Path("/path/to/agenticx-oag"))
 assert result.success, result.error
 ```
 
-安装后，为研究任务加载 `oag-deep-research` 技能；任务运行期间可使用 `memory/oag-research-memory.md` 保存对象、关系、主张和未决问题。具体的研究执行协议见 [`skills/oag-deep-research/SKILL.md`](skills/oag-deep-research/SKILL.md)。
+安装后，为研究任务加载 `agenticx-oag` 技能；任务运行期间可使用 `memory/oag-research-memory.md` 保存对象、关系、主张和未决问题。具体的研究执行协议见 [`skills/agenticx-oag/SKILL.md`](skills/agenticx-oag/SKILL.md)。
 
 ### 作为独立研究规范使用
 
@@ -52,7 +52,7 @@ assert result.success, result.error
 ```text
 .
 ├── agx-bundle.yaml                       # AgenticX AGX Bundle 清单
-├── skills/oag-deep-research/SKILL.md     # 可执行的 OAG 调研方法
+├── skills/agenticx-oag/SKILL.md     # 可执行的 OAG 调研方法
 ├── memory/oag-research-memory.md         # 研究工作记忆模板
 ├── avatars/oag-researcher.yaml           # 研究员角色预设
 ├── schemas/claim-ledger.schema.json      # 主张账本 JSON Schema

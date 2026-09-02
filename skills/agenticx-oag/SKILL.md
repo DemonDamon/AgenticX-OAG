@@ -1,10 +1,10 @@
 ---
-name: oag-deep-research
+name: agenticx-oag
 description: 使用本体增强生成方法执行可审计的深度调研，将研究问题组织为对象、关系、证据、主张、推断与行动边界。
-version: 0.1.0
+version: 0.2.0
 ---
 
-# OAG 深度调研技能
+# AgenticX-OAG 深度调研技能
 
 本技能用于复杂、跨来源且需要可追溯结论的研究任务。它将 **Ontology Augmented Generation（OAG）** 理解为：先用轻量本体表达研究领域中的对象、属性、关系、逻辑约束与可行动边界，再让调研、综合和推断过程始终受该结构约束。
 

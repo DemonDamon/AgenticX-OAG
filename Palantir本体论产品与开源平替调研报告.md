@@ -1,6 +1,6 @@
 # Palantir 本体论产品与开源平替：调研报告
 
-> 本报告基于 `oag-deep-research` 仓库的调研材料整理。所有结论区分三类证据：Palantir 官方产品文档与技术博客（描述公开产品主张）、同行评审论文与公开实现（建立可验证基线）、以及本仓库本地浅克隆的静态评估。
+> 本报告基于 `agenticx-oag` 仓库的调研材料整理。所有结论区分三类证据：Palantir 官方产品文档与技术博客（描述公开产品主张）、同行评审论文与公开实现（建立可验证基线）、以及本仓库本地浅克隆的静态评估。
 >
 > 配图采用 SVG 与 GIF 动画，SVG 位于 `assets/` 目录，数据流图位于 `prototype/prototype-near/out/`。
 
@@ -301,7 +301,7 @@ Palantir 的 Ontology 一句话定位：**把企业分散的数据、业务规�
 
 ### 仓库内部材料
 
-本报告结论来自 `oag-deep-research` 仓库以下核心材料：
+本报告结论来自 `agenticx-oag` 仓库以下核心材料：
 
 - `research/02-palantir-ontology-platform/DEEP_RESEARCH.md` — Palantir Ontology 平台模型深度研究
 - `research/02-palantir-ontology-platform/deliverables/palantir-product-shape-and-user-workflows.md` — 产品形态与员工工作流

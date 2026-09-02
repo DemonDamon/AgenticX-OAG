@@ -4,7 +4,7 @@
 
 | 清单条目 | 本仓库路径 | 安装后作用 |
 |---|---|---|
-| `components.skills[0]` | `skills/oag-deep-research/SKILL.md` | 复制到 `~/.agenticx/skills/bundles/oag-deep-research/oag-deep-research/` |
+| `components.skills[0]` | `skills/agenticx-oag/SKILL.md` | 复制到 `~/.agenticx/skills/bundles/agenticx-oag/agenticx-oag/` |
 | `components.avatars[0]` | `avatars/oag-researcher.yaml` | 复制为本地 Avatar 预设 |
 | `components.memory_templates[0]` | `memory/oag-research-memory.md` | 复制为工作区记忆模板 |
 

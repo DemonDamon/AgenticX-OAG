@@ -2,7 +2,7 @@
 
 
 
-本目录是 `oag-deep-research` 的长期研究工作区。它围绕 **Palantir Ontology、Ontology-Augmented Generation（OAG）及其向 AgenticX / Near 技能转化的路径**组织资料、代码、论文、阅读笔记和已审核交付物。目录的首要原则是：**每个编号目录只有一个主研究对象，资料只选择一个主归档位置**；跨主题使用来源 ID 或链接引用，而不复制同一份结论。
+本目录是 `agenticx-oag` 的长期研究工作区。它围绕 **Palantir Ontology、Ontology-Augmented Generation（OAG）及其向 AgenticX / Near 技能转化的路径**组织资料、代码、论文、阅读笔记和已审核交付物。目录的首要原则是：**每个编号目录只有一个主研究对象，资料只选择一个主归档位置**；跨主题使用来源 ID 或链接引用，而不复制同一份结论。
 
 
 
