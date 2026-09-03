@@ -1,0 +1,65 @@
+syntax = "proto3";
+package agenticx_oag.ontology.v1;
+
+enum DataType {
+  DATA_TYPE_UNSPECIFIED = 0;
+  DATA_TYPE_STRING = 1;
+  DATA_TYPE_DOUBLE = 2;
+  DATA_TYPE_INT64 = 3;
+  DATA_TYPE_BOOL = 4;
+  DATA_TYPE_TIMESTAMP = 5;
+  DATA_TYPE_JSON = 6;
+}
+
+enum Cardinality {
+  CARDINALITY_UNSPECIFIED = 0;
+  CARDINALITY_ONE_TO_ONE = 1;
+  CARDINALITY_ONE_TO_MANY = 2;
+  CARDINALITY_MANY_TO_MANY = 3;
+}
+
+message PropertyType {
+  string api_name = 1;            // camelCase，如 "riskLevel"
+  string display_name = 2;
+  DataType data_type = 3;
+  bool required = 4;
+  string description = 5;
+  repeated string enum_values = 6; // data_type==STRING 时可非空
+}
+
+message ObjectType {
+  string api_name = 1;            // PascalCase，如 "Customer"
+  string display_name = 2;
+  repeated PropertyType properties = 3;
+  repeated string primary_key = 4; // 引用 properties[].api_name
+  string parent = 5;               // 可选，类型层级（父 ObjectType.api_name）
+  string description = 6;
+}
+
+message LinkType {
+  string api_name = 1;            // camelCase，如 "owns"
+  string display_name = 2;
+  string source_type = 3;         // ObjectType.api_name
+  string target_type = 4;
+  Cardinality cardinality = 5;
+  repeated PropertyType properties = 6;
+}
+
+message ActionType {
+  string api_name = 1;            // camelCase，如 "freezeAccount"
+  string display_name = 2;
+  repeated string target_types = 3;   // 作用的 ObjectType.api_name 列表
+  repeated PropertyType parameters = 4;
+  repeated string preconditions = 5;  // 规则 ID 列表（P08 Harness 规则）
+  string approval_policy = 6;         // "none" | "single" | "two_level"
+  string rollback_handler = 7;        // 可选，回滚处理器标识
+}
+
+message Ontology {
+  string namespace = 1;           // 如 "finance.aml"
+  string version = 2;             // 语义化版本
+  repeated ObjectType object_types = 3;
+  repeated LinkType link_types = 4;
+  repeated ActionType action_types = 5;
+  map<string, string> metadata = 6;
+}

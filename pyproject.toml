@@ -1,0 +1,45 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "agenticx-oag"
+version = "0.1.0"
+description = "AgenticX-OAG engine: ontology contracts, provider interfaces, and runtime."
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2",
+    "pyyaml",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+    "ruff",
+    "mypy",
+]
+proto = [
+    "protobuf",
+    "grpcio-tools",
+]
+graph = [
+    "asyncpg",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["agenticx_oag"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = '-m "not integration"'
+markers = [
+    "integration: integration tests that require external services (docker compose)",
+]
+
+[tool.ruff]
+extend-exclude = ["agenticx_oag/contracts/gen"]
+
+[tool.mypy]
+files = ["agenticx_oag"]
+exclude = ["agenticx_oag/contracts/gen"]
