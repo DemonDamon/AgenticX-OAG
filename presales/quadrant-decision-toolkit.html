@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>本体论四象决策工具包 · AgenticX-OAG 售前物料</title>
+<style>
+:root{
+  --bg:#f6f7f9; --surface:#ffffff; --surface-2:#fbfbfd;
+  --ink:#21242b; --muted:#5c6370; --border:#e2e5ea; --border-strong:#c9cedb;
+  --accent:#4a5aa8; --accent-ink:#3c4a8c; --accent-weak:#eef0f8;
+  --ok:#1f7a5c; --danger:#a03030;
+  --code-bg:#f1f2f6;
+  --shadow:0 1px 3px rgba(20,24,40,.07);
+  --radius:10px;
+}
+html[data-theme="dark"]{
+  --bg:#14161d; --surface:#1c1f27; --surface-2:#22252e;
+  --ink:#e7e9f0; --muted:#a2a9b8; --border:#313644; --border-strong:#454b5c;
+  --accent:#9aa8ef; --accent-ink:#b3bdf5; --accent-weak:#272c3d;
+  --ok:#6fd3ab; --danger:#e08a8a;
+  --code-bg:#262a35;
+  --shadow:0 1px 3px rgba(0,0,0,.4);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Segoe UI",sans-serif;
+  background:var(--bg); color:var(--ink); line-height:1.65; font-size:15px;
+}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+a{color:var(--accent-ink)}
+
+/* ---------- header ---------- */
+.site-header{background:var(--surface);border-bottom:1px solid var(--border)}
+.site-header .wrap{display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding-top:22px;padding-bottom:22px}
+.brand{flex:1 1 420px;min-width:280px}
+.brand h1{font-size:22px;letter-spacing:.5px}
+.brand .subtitle{color:var(--muted);font-size:13px;margin-top:6px;max-width:760px}
+.header-actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn{
+  appearance:none;border:1px solid var(--border-strong);background:var(--surface);color:var(--ink);
+  font-size:13px;padding:7px 14px;border-radius:7px;cursor:pointer;font-family:inherit;
+}
+.btn:hover{border-color:var(--accent);color:var(--accent-ink)}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn-primary:hover{opacity:.9;color:#fff}
+html[data-theme="dark"] .btn-primary{color:#10121a}
+
+/* ---------- toc ---------- */
+.toc{background:var(--surface-2);border-bottom:1px solid var(--border)}
+.toc .wrap{display:flex;flex-wrap:wrap;gap:8px;padding-top:10px;padding-bottom:10px}
+.toc a{
+  font-size:13px;text-decoration:none;color:var(--muted);border:1px solid var(--border);
+  border-radius:999px;padding:4px 13px;background:var(--surface);
+}
+.toc a:hover{color:var(--accent-ink);border-color:var(--accent)}
+
+/* ---------- sections ---------- */
+main{padding:34px 0 10px}
+section{margin-bottom:46px}
+h2{font-size:20px;margin-bottom:6px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+h2 .sec-no{color:var(--accent);font-size:15px;font-weight:700;letter-spacing:1px}
+.section-note{color:var(--muted);font-size:13.5px;margin-bottom:16px;max-width:860px}
+h3{font-size:16px;margin-bottom:8px}
+
+.card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  box-shadow:var(--shadow);padding:20px 22px;
+}
+
+/* ---------- decision wizard ---------- */
+.wizard-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:760px){.wizard-grid{grid-template-columns:1fr}}
+.q-progress{list-style:none;display:flex;flex-direction:column;gap:8px}
+.q-progress li{
+  display:flex;align-items:center;gap:10px;font-size:13.5px;color:var(--muted);
+  border:1px solid var(--border);border-radius:8px;padding:8px 12px;background:var(--surface-2);
+}
+.q-progress li .qno{
+  font-weight:700;font-size:12px;border-radius:6px;padding:1px 8px;
+  background:var(--code-bg);color:var(--muted);white-space:nowrap;
+}
+.q-progress li.current{border-color:var(--accent);color:var(--ink);background:var(--accent-weak)}
+.q-progress li.current .qno{background:var(--accent);color:#fff}
+.q-progress li.done .qno{background:var(--ok);color:#fff}
+.q-progress li.stop{border-color:var(--danger)}
+.q-progress li.stop .qno{background:var(--danger);color:#fff}
+
+.q-card .q-head{font-size:13px;color:var(--muted);letter-spacing:1px}
+.q-card .q-text{font-size:21px;font-weight:700;margin:6px 0 4px}
+.q-card .q-std{font-size:13.5px;color:var(--accent-ink);margin-bottom:10px}
+.q-card .q-probes{margin:10px 0 18px;padding-left:0;list-style:none}
+.q-card .q-probes li{
+  font-size:13.5px;color:var(--muted);padding-left:18px;position:relative;margin-bottom:3px;
+}
+.q-card .q-probes li::before{content:"-";position:absolute;left:6px;color:var(--accent)}
+.q-buttons{display:flex;gap:12px;flex-wrap:wrap}
+.q-buttons .btn{font-size:15px;padding:10px 34px}
+.q-reset{margin-top:14px}
+.q-reset .btn{font-size:12.5px;color:var(--muted)}
+
+/* decision tree reference (always visible, print friendly) */
+.tree-ref{
+  margin-top:18px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:16px 20px;
+}
+.tree-ref .tree-title{font-size:13px;color:var(--muted);margin-bottom:10px}
+.tree-ref pre{
+  font-family:"SF Mono",Menlo,Consolas,"Courier New",monospace;font-size:13px;line-height:1.8;
+  overflow-x:auto;color:var(--ink);
+}
+.tree-ref pre b{color:var(--accent-ink)}
+
+/* ---------- quadrant cards ---------- */
+.quad-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:860px){.quad-grid{grid-template-columns:1fr}}
+.quad-card{
+  background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--q);
+  border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 20px;
+}
+.q-semantic{--q:#6d4fa3;--q-weak:#f3effa}
+.q-kg{--q:#2f6fa3;--q-weak:#eef4fa}
+.q-palantir{--q:#1f7a6d;--q-weak:#ebf6f3}
+.q-agent{--q:#9a6b1f;--q-weak:#faf3e8}
+html[data-theme="dark"] .q-semantic{--q-weak:#2a2438}
+html[data-theme="dark"] .q-kg{--q-weak:#1f2a38}
+html[data-theme="dark"] .q-palantir{--q-weak:#1c2f2b}
+html[data-theme="dark"] .q-agent{--q-weak:#302a1e}
+
+.quad-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px}
+.quad-name{font-size:17px;font-weight:700;color:var(--q)}
+.quad-zh{font-size:13px;color:var(--muted)}
+.layer-badge{
+  font-size:12px;font-weight:600;color:var(--q);background:var(--q-weak);
+  border:1px solid var(--q);border-radius:999px;padding:1px 10px;
+}
+.quad-core{font-size:14.5px;margin:6px 0 2px}
+.quad-world{font-size:12.5px;color:var(--muted);margin-bottom:12px}
+.quad-sec{margin-top:12px}
+.quad-sec .quad-sec-title{
+  font-size:12px;color:var(--muted);letter-spacing:1px;margin-bottom:6px;
+  border-bottom:1px dashed var(--border);padding-bottom:4px;
+}
+.quad-sec ul{list-style:none}
+.quad-sec ul li{
+  font-size:13px;padding:2px 0 2px 16px;position:relative;color:var(--ink);
+}
+.quad-sec ul li::before{content:"·";position:absolute;left:4px;color:var(--q);font-weight:700}
+.role-rows{display:grid;gap:5px}
+.role-row{display:flex;gap:10px;font-size:13px}
+.role-row .role-k{
+  flex:0 0 92px;font-weight:600;color:var(--q);background:var(--q-weak);
+  border-radius:6px;text-align:center;padding:1px 4px;font-size:12px;height:fit-content;
+}
+.role-row .role-v{flex:1}
+.poc-box{
+  margin-top:14px;background:var(--q-weak);border:1px dashed var(--q);border-radius:8px;padding:10px 14px;
+}
+.poc-box .poc-type{font-weight:700;font-size:14px;color:var(--q)}
+.poc-box .poc-desc{font-size:12.5px;margin-top:3px;color:var(--ink)}
+.role-quote{font-size:12px;color:var(--muted);margin-top:10px}
+
+/* result card */
+.result-card{
+  border:2px solid var(--q);margin-top:16px;position:relative;
+}
+.result-path{
+  font-size:12.5px;color:var(--muted);background:var(--q-weak);border-radius:8px;
+  padding:6px 12px;margin-bottom:4px;
+}
+.result-actions{margin-top:14px;display:flex;gap:10px;flex-wrap:wrap}
+
+/* ---------- scenarios ---------- */
+.scenario-tools{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.tabs{display:flex;gap:8px;flex-wrap:wrap}
+.tab{
+  font-size:13px;border:1px solid var(--border-strong);background:var(--surface);color:var(--muted);
+  border-radius:999px;padding:5px 14px;cursor:pointer;font-family:inherit;
+}
+.tab:hover{border-color:var(--accent);color:var(--accent-ink)}
+.tab.active{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+html[data-theme="dark"] .tab.active{color:#10121a}
+.search-box{flex:1 1 240px;min-width:200px;display:flex;align-items:center;gap:8px}
+.search-box input{
+  width:100%;font-size:14px;font-family:inherit;padding:8px 12px;border:1px solid var(--border-strong);
+  border-radius:8px;background:var(--surface);color:var(--ink);
+}
+.search-box input:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+.row-count{font-size:12.5px;color:var(--muted)}
+.table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow)}
+table{border-collapse:collapse;width:100%;min-width:760px;font-size:13.5px}
+thead th{
+  background:var(--surface-2);color:var(--muted);font-size:12.5px;letter-spacing:.5px;text-align:left;
+  padding:10px 12px;border-bottom:2px solid var(--border-strong);white-space:nowrap;
+}
+tbody td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:var(--surface-2)}
+td.scene-no{color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+td.scene-name{font-weight:600;white-space:nowrap}
+.q-badge{
+  display:inline-block;font-size:12px;font-weight:600;color:var(--q);background:var(--q-weak);
+  border-radius:6px;padding:1px 8px;border:1px solid var(--q);white-space:nowrap;
+}
+.q-badge.all{--q:var(--accent);background:var(--accent-weak)}
+.src-note{font-size:12px;color:var(--muted);margin-top:10px}
+
+/* ---------- combinations ---------- */
+.mode-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+@media (max-width:920px){.mode-grid{grid-template-columns:1fr}}
+.mode-card{
+  background:var(--surface);border:1px solid var(--border);border-top:3px solid var(--accent);
+  border-radius:var(--radius);box-shadow:var(--shadow);padding:16px 18px;
+}
+.mode-card .mode-no{font-size:12px;color:var(--accent-ink);font-weight:700;letter-spacing:1px}
+.mode-card h3{font-size:15px;margin:2px 0 8px}
+.mode-card .mode-desc{font-size:13px;color:var(--muted);margin-bottom:10px}
+.flow-box{
+  background:var(--code-bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px;
+  font-family:"SF Mono",Menlo,Consolas,"Courier New",monospace;font-size:12.5px;line-height:1.7;
+  overflow-x:auto;white-space:pre;
+}
+.mode-tag{font-size:12px;color:var(--muted);margin-top:8px}
+.fullstack{
+  margin-top:16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  box-shadow:var(--shadow);padding:16px 20px;
+}
+.evolve-quote{
+  margin-top:16px;border-left:4px solid var(--accent);background:var(--accent-weak);
+  border-radius:0 var(--radius) var(--radius) 0;padding:14px 18px;
+}
+.evolve-quote .eq-main{font-size:15.5px;font-weight:700;color:var(--accent-ink)}
+.evolve-quote .eq-sub{font-size:13px;margin-top:6px;color:var(--ink)}
+.evolve-quote .eq-src{font-size:12px;color:var(--muted);margin-top:6px}
+
+/* ---------- pitfalls ---------- */
+.pit-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:860px){.pit-grid{grid-template-columns:1fr}}
+.pit-card{
+  background:var(--surface);border:1px solid var(--border);border-top:3px solid var(--danger);
+  border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 20px;
+}
+.pit-no{font-size:12px;color:var(--danger);font-weight:700;letter-spacing:1px}
+.pit-card h3{font-size:16px;margin:2px 0 8px}
+.pit-body{font-size:13.5px;color:var(--ink)}
+.pit-body .pit-right{color:var(--ok)}
+.pit-talk{
+  margin-top:12px;background:var(--surface-2);border:1px dashed var(--border-strong);
+  border-radius:8px;padding:12px 14px;
+}
+.pit-talk .talk-title{font-size:12.5px;font-weight:700;color:var(--accent-ink);margin-bottom:5px}
+.pit-talk .talk-body{font-size:13px;color:var(--ink)}
+
+/* ---------- footer ---------- */
+footer{border-top:1px solid var(--border);margin-top:20px;padding:22px 0 40px;color:var(--muted);font-size:12.5px}
+footer .wrap{display:flex;flex-direction:column;gap:4px}
+
+/* ---------- mobile ---------- */
+@media (max-width:640px){
+  body{font-size:14.5px}
+  .brand h1{font-size:19px}
+  .q-card .q-text{font-size:18px}
+  .card,.quad-card,.pit-card{padding:15px 16px}
+  .role-row{flex-direction:column;gap:2px}
+  .role-row .role-k{flex:none;align-self:flex-start}
+  .tabs{gap:6px}
+  .tab{font-size:12px;padding:4px 10px}
+}
+
+/* ---------- print ---------- */
+@media print{
+  @page{margin:13mm}
+  html,body{background:#fff !important;color:#000 !important;font-size:11.5px}
+  .no-print{display:none !important}
+  .wrap{max-width:100%;padding:0}
+  main{padding:0}
+  section{margin-bottom:22px;break-inside:auto}
+  h2{break-after:avoid;font-size:16px}
+  .card,.quad-card,.pit-card,.mode-card,.tree-ref,.fullstack,.table-wrap{
+    box-shadow:none !important;break-inside:avoid;
+  }
+  .table-wrap{overflow:visible;border-color:#999}
+  table{min-width:0;font-size:10.5px}
+  thead th{background:#f2f2f2 !important;color:#000 !important;border-bottom:1.5px solid #666}
+  tbody td{border-color:#bbb;padding:6px 8px}
+  /* 单色化：全部走黑灰 */
+  :root,.q-semantic,.q-kg,.q-palantir,.q-agent{
+    --bg:#fff; --surface:#fff; --surface-2:#fff; --ink:#000; --muted:#333;
+    --border:#999; --border-strong:#666; --accent:#000; --accent-ink:#000; --accent-weak:#fff;
+    --q:#000; --q-weak:#fff; --ok:#000; --danger:#000; --code-bg:#f4f4f4;
+  }
+  a{color:#000 !important;text-decoration:none}
+  .tab.active{background:#fff !important;color:#000 !important;border:1px solid #000}
+  /* 展开全部 16 行 */
+  tbody tr.is-hidden{display:table-row !important}
+  #emptyRow{display:none !important}
+  #resultCard[hidden]{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <div class="brand">
+      <h1>本体论四象决策工具包</h1>
+      <p class="subtitle">第一次客户会议不谈产品，先用决策树四问定位需求落在哪个本体象限。内容源：《本体论紫皮书》（刘焕勇，2026-08）第 7/8 章 × docs/enterprise-landing.md v0.3 §一点五四象定位表。离线可用，打印即为客户版。</p>
+    </div>
+    <div class="header-actions no-print">
+      <button type="button" class="btn" id="themeToggle">切换深色</button>
+      <button type="button" class="btn btn-primary" onclick="window.print()">打印 / 存为 PDF</button>
+    </div>
+  </div>
+</header>
+
+<nav class="toc no-print" aria-label="目录">
+  <div class="wrap">
+    <a href="#decision">一 · 决策树四问</a>
+    <a href="#quadrants">二 · 四象限结果页</a>
+    <a href="#scenarios">三 · 16 场景匹配表</a>
+    <a href="#combinations">四 · 组合使用模式</a>
+    <a href="#pitfalls">五 · 四大红线</a>
+  </div>
+</nav>
+
+<main class="wrap">
+
+  <!-- ============ 一、决策树 ============ -->
+  <section id="decision">
+    <h2><span class="sec-no">一</span>决策树四问 · 售前资格认证</h2>
+    <p class="section-note">决策树的核心逻辑是<b>逐层排除</b>：先问最具区分度的问题，每一层只做一个二元判断。任一问答「是」即终止并输出象限推荐；四问全「否」落默认兜底（治理层）。第一次客户会议建议现场带着客户一起走。</p>
+
+    <div class="wizard-grid">
+      <div class="card no-print" id="wizardCard">
+        <ol class="q-progress" id="qProgress" aria-label="四问进度"></ol>
+      </div>
+      <div class="card no-print" id="questionCard" aria-live="polite"></div>
+    </div>
+
+    <div id="resultMount"></div>
+
+    <div class="tree-ref">
+      <p class="tree-title">决策树全文参照（紫皮书 8.1 × enterprise-landing.md 阶段一 · 第 0 步）</p>
+<pre>开始选型
+│
+Q1 需要逻辑推理吗？（隐含知识派生 / 分类推理）
+│   追问：是否需要从已知推导未知？概念间是否存在传递/互斥等逻辑关系？
+├─ 是 → <b>Semantic Ontology</b>（知识层）→ 我们只提供 RDF 接口 + 生态合作，不硬上
+└─ 否 ↓
+Q2 需要多跳关联查询吗？（实体间 N 跳路径发现，&gt; 2 跳）
+│   追问：是否需要发现实体间的间接关联？关联路径长度是否 &gt; 2 跳？
+├─ 是 → <b>KG Schema</b>（查询层）主打 → 检索型 POC
+└─ 否 ↓
+Q3 需要操作执行闭环吗？（Action 驱动状态变更 / 审批 / 回滚）
+│   追问：是否需要通过操作改变业务对象状态？是否需要审批/回滚？
+├─ 是 → <b>Palantir 式执行层</b>主打 → 操作闭环型 POC
+└─ 否 ↓
+Q4 需要约束 Agent 行为吗？（权限约束 / 行为审计）
+├─ 是 → <b>Agent Ontology 治理层</b>主打 → 治理型 POC
+└─ 否（四问全否）→ 默认：<b>Agent Ontology 治理层</b>（兜底）</pre>
+    </div>
+  </section>
+
+  <!-- ============ 二、四象限结果页 ============ -->
+  <section id="quadrants">
+    <h2><span class="sec-no">二</span>四象限结果页 · 定位与打法</h2>
+    <p class="section-note">决策树任一分支的落点都在这里。每象限含：核心命题、典型技术栈（紫皮书 7.2 架构栈）、我们的角色映射（卖什么 / 不卖什么 / 走生态接口，取自 enterprise-landing.md §一点五四象定位表）、推荐 POC 类型。一句话定位：AgenticX-OAG = KG Schema（查询层）+ Palantir 式执行层 + Agent Ontology 治理层的三层组合体，Semantic Ontology 走生态接口。</p>
+    <div class="quad-grid" id="quadGrid"></div>
+  </section>
+
+  <!-- ============ 三、16 场景表 ============ -->
+  <section id="scenarios">
+    <h2><span class="sec-no">三</span>16 场景匹配表</h2>
+    <p class="section-note">决策树给出方向，场景表给出参考。客户对号入座：下方 16 行照抄《紫皮书》8.2 场景匹配表，行号与原文一致，未做任何改写。</p>
+
+    <div class="scenario-tools no-print">
+      <div class="tabs" id="scenarioTabs" role="tablist"></div>
+      <div class="search-box">
+        <input type="search" id="scenarioSearch" placeholder="关键词搜索：如 反欺诈 / Agent / 推理 …" aria-label="搜索场景">
+      </div>
+      <span class="row-count" id="rowCount"></span>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>#</th><th>业务场景</th><th>核心需求</th><th>推荐本体论</th><th>选型理由</th></tr>
+        </thead>
+        <tbody id="scenarioBody"></tbody>
+      </table>
+    </div>
+    <p class="src-note">来源：《本体论紫皮书》8.2 场景匹配表（十六个典型场景及推荐的本体论类型）。第 16 行（智能客服 Agent）为组合场景：知识查询走 KG，行为约束走 Agent Ontology。</p>
+  </section>
+
+  <!-- ============ 四、组合模式 ============ -->
+  <section id="combinations">
+    <h2><span class="sec-no">四</span>组合使用模式</h2>
+    <p class="section-note">真实系统很少只用一种本体论。紫皮书 8.3 给出三种经过验证的组合模式——每一种都是「两层各司其职」，不是功能堆叠。</p>
+
+    <div class="mode-grid">
+      <div class="mode-card">
+        <p class="mode-no">模式一</p>
+        <h3>知识层 + 查询层</h3>
+        <p class="mode-desc">Semantic Ontology（知识层）+ KG Schema（查询层）。知识层负责「正确性」，查询层负责「性能」。</p>
+        <div class="flow-box">OWL 本体 (TBox)
+  → 推理引擎 HermiT/Pellet
+  → 隐含三元组
+  ──物化──▶ 图数据库
+  (Neo4j / NebulaGraph)
+  → Cypher 多跳查询
+  → 业务系统消费</div>
+        <p class="mode-tag">知识层定义概念体系与逻辑公理、推理产出隐含三元组；物化进图数据库后供业务系统做高性能多跳查询。</p>
+      </div>
+
+      <div class="mode-card">
+        <p class="mode-no">模式二</p>
+        <h3>数据层 + 执行层</h3>
+        <p class="mode-desc">KG Schema（数据层）+ Palantir Ontology（执行层）。数据层负责「关联发现」，执行层负责「操作闭环」。</p>
+        <div class="flow-box">KG Schema
+  (人/设备/订单图谱)
+  ──映射为强类型 Object──▶
+  Palantir Ontology
+  (Action + Function)
+  → 处置操作闭环</div>
+        <p class="mode-tag">典型场景：KG 中发现风险关联后，在 Ontology 中触发处置 Action。对应 AgenticX：检索 → Action Gateway 闭环。</p>
+      </div>
+
+      <div class="mode-card">
+        <p class="mode-no">模式三</p>
+        <h3>业务层 + 治理层</h3>
+        <p class="mode-desc">Palantir Ontology（业务层）+ Agent Ontology（治理层）。业务层负责「做什么」，治理层负责「能不能做」。</p>
+        <div class="flow-box">Agent 发起操作请求
+  → Palantir Ontology
+    (业务对象 / Action)
+  ──拦截──▶ Agent Ontology
+    (Guardrail 校验)
+  → 允许 / 拒绝</div>
+        <p class="mode-tag">每次 Agent 调用 Action 前，先过 Guardrail 校验权限和合规性。对应 AgenticX：Harness + 四权矩阵。</p>
+      </div>
+    </div>
+
+    <div class="fullstack">
+      <h3>全栈组合（理想形态）</h3>
+      <div class="flow-box">Semantic → KG Schema → Palantir Ont. → Agent Ont.
+（知识层）  （查询层）    （执行层）      （治理层）</div>
+      <p class="mode-tag" style="margin-top:8px">注意：理想形态 ≠ 一步到位的目标。见下方演进原则与第五节误区四。</p>
+    </div>
+
+    <div class="evolve-quote">
+      <p class="eq-main">「组合是演进而来的，不是设计出来的。」</p>
+      <p class="eq-sub">先用决策树选定一个核心本体论，验证价值后再逐步叠加其他层。在没有验证单一本体论价值前就搭建组合系统，会导致架构复杂度失控、团队认知负荷过重、每一层都做不好。</p>
+      <p class="eq-src">—— 紫皮书 8.4 误区四 · 也是 enterprise-landing.md 阶段二的演进原则：POC 验证过的那个象限做深，再按客户实际痛点叠加第二个象限，禁止一上来推三层全栈。</p>
+    </div>
+  </section>
+
+  <!-- ============ 五、四大红线 ============ -->
+  <section id="pitfalls">
+    <h2><span class="sec-no">五</span>四大选型误区 · 售前红线</h2>
+    <p class="section-note">紫皮书 8.4 四大误区逐条呈现（正文忠实原文），每条配售前话术：遇到该诉求时如何回应。红线含义：这四类诉求出现时，宁可放慢节奏，不要顺着客户把方案做歪。</p>
+    <div class="pit-grid" id="pitGrid"></div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <p><b>AgenticX-OAG · P01 售前决策工具包</b>（presales/quadrant-decision-toolkit.html）</p>
+    <p>内容源：《本体论紫皮书：四种 Ontology 的技术本质、实践案例与选型决策》（刘焕勇，2026-08）第 7/8 章；docs/enterprise-landing.md v0.3 §一点五「本体论四象定位」与 §二阶段一「售前资格认证——决策树四问」。</p>
+    <p>使用提示：售前内部使用时走交互流程；投屏默认浅色主题；浏览器「打印 → 存为 PDF」输出客户版（自动隐藏交互件、展开全部 16 行、单色排版）。配套话术手册见 docs/presales/four-quadrant-playbook.md。</p>
+  </div>
+</footer>
+
+<script>
+(function(){
+"use strict";
+
+/* ============ 数据层：术语与内容全部照抄紫皮书 8.1/8.2 与 enterprise-landing.md §一点五 ============ */
+
+var QUADRANTS = {
+  semantic: {
+    key: "semantic", cls: "q-semantic",
+    name: "Semantic Ontology", zh: "语义本体论 · 逻辑推理", layer: "知识层",
+    core: "世界是什么——用形式化逻辑定义概念的本质与边界",
+    world: "哲学根基：描述逻辑（DL）、开放世界假设（OWA）· 只读推理",
+    via: "由 Q1「需要逻辑推理吗？」判定",
+    stack: [
+      "本体层：TBox + ABox（OWL 公理 / RDF 三元组）",
+      "推理引擎层：HermiT / Pellet / ELK",
+      "查询层：SPARQL Endpoint（含 CONSTRUCT / ASK 推理查询）",
+      "存储层：三元组存储 Stardog / GraphDB / Jena"
+    ],
+    roleQuote: "§一点五原文：「不自研。留标准接口（RDF 导入/导出），需要推理的客户接 HermiT/Pellet 类生态」",
+    sell: "本象限不卖产品——不是我们要赢的战场",
+    notSell: "不自研 OWL 推理引擎，不硬上概念推理场景",
+    eco: "留标准 RDF 导入/导出接口；需要推理的客户接 HermiT/Pellet 类生态（转生态合作）",
+    pocType: "转生态合作",
+    pocDesc: "我们只提供 RDF 接口 + 生态合作，不硬上。把推理主战场让给生态伙伴，换取查询层 / 执行层 / 治理层的入场券。"
+  },
+  kg: {
+    key: "kg", cls: "q-kg",
+    name: "KG Schema", zh: "知识图谱模式 · 关联查询", layer: "查询层",
+    core: "实体之间怎么连——用图结构表达关联拓扑",
+    world: "哲学根基：图论、封闭世界假设（CWA）、结构主义 · 读写均衡",
+    via: "由 Q2「需要多跳关联查询吗？」判定",
+    stack: [
+      "图模式层：Schema（Node Label + Edge Type + 属性）",
+      "查询引擎层：Cypher / Gremlin / GQL",
+      "应用层：图可视化 / 图算法 API（关联分析、推荐）",
+      "存储层：图数据库 Neo4j / NebulaGraph / TigerGraph"
+    ],
+    roleQuote: "§一点五原文：「自建，复用 AgenticX knowledge/graphers。CWA 与 PG+AGE 技术选型天然匹配」",
+    sell: "自建 KG Schema 能力，复用 AgenticX knowledge/graphers",
+    notSell: "—（本象限为自建主场，无让渡项）",
+    eco: "CWA 与 PG+AGE 技术选型天然匹配（存储复用 PostgreSQL + Apache AGE 图生态）",
+    pocType: "检索型 POC",
+    pocDesc: "选一个多跳关联场景（如反欺诈、企业知识图谱），跑通「提问 → OAG 检索 → 答案 + 来源追溯」全链路，用 faithfulness / citation 准确率 / 幻觉率说话。"
+  },
+  palantir: {
+    key: "palantir", cls: "q-palantir",
+    name: "Palantir Ontology", zh: "执行层 · 操作闭环", layer: "执行层",
+    core: "业务怎么运转——用对象+动作驱动操作闭环",
+    world: "哲学根基：面向对象范式（OOP）、操作主义、实体-动作二元论 · 读写闭环",
+    via: "由 Q3「需要操作执行闭环吗？」判定",
+    stack: [
+      "对象层：Object + Link（强类型实体 · 业务关系）",
+      "动作层：Action + Function（状态迁移 / 审批流 / 事务）",
+      "应用层：Workshop / AIP / Agent / OSDK（操作决策）",
+      "数据层：Data Connection（Foundry Pipeline / 虚拟化映射）"
+    ],
+    roleQuote: "§一点五原文：「核心对标。Action Gateway + Function + Writeback 是最值钱的部分」",
+    sell: "Action Gateway + Function + Writeback——核心对标 Palantir，最值钱的部分",
+    notSell: "—（核心自研能力位）",
+    eco: "—（对标 Palantir Foundry / AIP 的能力位，开源平替路线）",
+    pocType: "操作闭环型 POC",
+    pocDesc: "选一个 Action 真实改变业务对象状态的流程（含审批 / 回滚），跑通 Object → Action → Writeback 闭环，验证状态迁移的一致性与可回滚性。"
+  },
+  agent: {
+    key: "agent", cls: "q-agent",
+    name: "Agent Ontology", zh: "治理层 · 行为约束", layer: "治理层",
+    core: "Agent 该怎么做——用约束规约智能体行为边界",
+    world: "哲学根基：行为规约理论、约束编程、安全沙箱思想 · 只读约束",
+    via: "由 Q4「需要约束 Agent 行为吗？」判定；四问全「否」时亦默认落此（治理层兜底）",
+    stack: [
+      "工具层：Tool Schema（MCP / Function Calling 定义）",
+      "治理层：Guardrail + Policy（输入过滤 / 工具限权 / 输出审查）",
+      "约束层：Rule + Constraint（行为白名单 / 禁止规则 / 审计）",
+      "应用层：LLM + Tool Use / 多轮对话（Agent 任务执行）"
+    ],
+    roleQuote: "§一点五原文：「核心差异化。治理 LLM 决策过程本身，Semantica 没有、Palantir AIP 不外售」",
+    sell: "治理 LLM 决策过程本身——核心差异化",
+    notSell: "—（治理层不直接写业务数据，旁路校验）",
+    eco: "—（竞争空档：Semantica 没有此能力、Palantir AIP 不外售）",
+    pocType: "治理型 POC",
+    pocDesc: "拿一个高危 Agent 场景（退款 / 派工 / 用药），跑通「调用 Action 前先过约束校验 → 允许 / 拒绝 + 审计留痕」，用拦截正确率与审计完备性说话。"
+  }
+};
+
+var QUESTIONS = [
+  { id: "Q1", text: "需要逻辑推理吗？", std: "判定标准：隐含知识派生 / 分类推理",
+    probes: ["是否需要从已知推导未知？", "概念间是否存在传递 / 互斥等逻辑关系？"], yes: "semantic" },
+  { id: "Q2", text: "需要多跳关联查询吗？", std: "判定标准：实体间 N 跳路径发现",
+    probes: ["是否需要发现实体间的间接关联？", "关联路径长度是否 > 2 跳？"], yes: "kg" },
+  { id: "Q3", text: "需要操作执行闭环吗？", std: "判定标准：Action 驱动状态变更",
+    probes: ["是否需要通过操作改变业务对象状态？", "是否需要审批 / 回滚？"], yes: "palantir" },
+  { id: "Q4", text: "需要约束 Agent 行为吗？", std: "判定标准：权限约束 / 行为审计",
+    probes: [], yes: "agent" }
+];
+
+/* 16 场景：照抄紫皮书 8.2（解析版 page 139），行号与原文一致 */
+var SCENARIOS = [
+  { no: 1,  scene: '临床术语标准化',   need: '概念分类推理',  onto: 'Semantic Ontology', quadrant: 'semantic', reason: 'SNOMED CT本身即OWL本体，需要传递推理确定术语层级' },
+  { no: 2,  scene: '反欺诈关联分析',   need: '多跳路径发现',  onto: 'KG Schema',         quadrant: 'kg',       reason: '需发现"人-账户-设备-地址"间的隐式团伙关联' },
+  { no: 3,  scene: '航线网络优化',     need: '图拓扑分析',    onto: 'KG Schema',         quadrant: 'kg',       reason: '机场-航线构成网络，需centrality/社区发现等图算法' },
+  { no: 4,  scene: '运行控制决策',     need: '状态迁移+审批', onto: 'Palantir Ontology', quadrant: 'palantir', reason: '航班状态(计划/延误/取消)需Action驱动变更并审批' },
+  { no: 5,  scene: '维修工卡Agent',    need: '工具约束+审计', onto: 'Agent Ontology',    quadrant: 'agent',    reason: 'Agent调取工卡/录入结果需权限约束和行为审计' },
+  { no: 6,  scene: '投顾Agent',        need: '合规约束',      onto: 'Agent Ontology',    quadrant: 'agent',    reason: '投资建议需受适当性管理约束，禁止越权推荐' },
+  { no: 7,  scene: '适航审查知识管理', need: '法规推理',      onto: 'Semantic Ontology', quadrant: 'semantic', reason: '适航条款间存在引用/例外/豁免等逻辑关系，需推理' },
+  { no: 8,  scene: '供应链调度',       need: '操作闭环',      onto: 'Palantir Ontology', quadrant: 'palantir', reason: '订单/库存/物流状态需Action驱动且可回滚' },
+  { no: 9,  scene: '设备维修Agent',    need: '行为约束',      onto: 'Agent Ontology',    quadrant: 'agent',    reason: 'Agent调用诊断工具/派工需权限分级和操作审计' },
+  { no: 10, scene: '诊疗辅助Agent',    need: '安全约束',      onto: 'Agent Ontology',    quadrant: 'agent',    reason: '用药建议需药物相互作用校验和禁忌拦截' },
+  { no: 11, scene: '企业知识图谱构建', need: '实体关联查询',  onto: 'KG Schema',         quadrant: 'kg',       reason: '人/组织/项目/产品间的多跳关系查询是核心需求' },
+  { no: 12, scene: '产品配置约束校验', need: '逻辑一致性',    onto: 'Semantic Ontology', quadrant: 'semantic', reason: '配置项间存在互斥/依赖关系，需推理检测冲突' },
+  { no: 13, scene: '订单全流程管理',   need: '状态机+事务',   onto: 'Palantir Ontology', quadrant: 'palantir', reason: '订单从创建到履约需Action驱动状态流转并保证一致性' },
+  { no: 14, scene: '代码生成Agent',    need: '工具限权',      onto: 'Agent Ontology',    quadrant: 'agent',    reason: 'Agent只能调用白名单内的工具，禁止执行危险操作' },
+  { no: 15, scene: '法规合规检查',     need: '规则推理',      onto: 'Semantic Ontology', quadrant: 'semantic', reason: '法规条款间的引用/例外关系需逻辑推理判定合规性' },
+  { no: 16, scene: '智能客服Agent',    need: '行为约束+知识', onto: 'Agent Ontology + KG', quadrant: 'combo',  reason: '知识查询走KG，行为约束(退款/改签权限)走Agent Ontology' }
+];
+
+/* 四大误区：正文照抄紫皮书 8.4；话术为售前物料原创 */
+var PITFALLS = [
+  {
+    no: "误区一", title: "用知识图谱替代一切",
+    body: "最常见的错误。团队听说「知识图谱」后，试图用它同时做概念推理、操作执行和 Agent 约束。结果：图遍历无法替代逻辑推理（缺传递性推导），图节点无法承载 Action 状态机，图属性无法定义行为约束。图谱只是四种本体论中的一种，不是万能替代品。",
+    right: "正确做法：明确核心需求是「关联查询」时才选 KG Schema，其他需求选择对应的本体论或组合使用。",
+    talk: "客户说「建一个知识图谱，把推理、执行、Agent 管控全装进去」时：先肯定方向（关联数据确实该进图谱），再用决策树拆解——术语层级推理是 Q1（Semantic），操作闭环是 Q3（执行层），Agent 权限是 Q4（治理层）。话术落点：「图谱回答的是『实体怎么连』（Q2）；您提到的另外三件事各有更对口的本体类型。我们先用四问定位最痛的那一个，POC 只主打一个象限，验证价值后再叠加。」"
+  },
+  {
+    no: "误区二", title: "混淆概念层级与实例关联",
+    body: "将「飞机是一种航空器」（概念间的子类关系，属于 Semantic Ontology 的 TBox）和「航班 CA123 使用飞机 B-1234」（实例间的关联，属于 KG Schema 的边）混为一谈，全部塞进同一个图模型。后果：概念推理和实例查询互相干扰，图规模膨胀且无法做有效的逻辑推理。",
+    right: "正确做法：概念层用 OWL 本体管理，实例层用图数据库管理，通过物化或映射桥接。",
+    talk: "客户把「飞机是一种航空器」和「航班 CA123 使用飞机 B-1234」画进同一张图时：指出这是两类东西——前者是概念间子类关系（TBox，逻辑推理的对象），后者是实例间关联（图的边，遍历查询的对象），混建会让两边都做不好。话术落点：「概念层用本体管，实例层用图数据库管，中间用物化 / 映射桥接——这正是组合模式一的标准做法，我们按这个分层帮您建。」"
+  },
+  {
+    no: "误区三", title: "忽视世界假设的后果",
+    body: "在开放世界假设（OWA）的系统上做否定查询（「找出没有维修记录的飞机」），或在封闭世界假设（CWA）的系统上期望推理完备性。前者会遗漏数据（OWA 下「没有记录」不等于「没有维修」），后者会错误地认为「图中没有就是不存在」。",
+    right: "正确做法：在选型时明确标注系统的世界假设，查询语义要与世界假设匹配。",
+    talk: "客户要做否定查询（「找出没有维修记录的飞机」）或期望「图中没有就是不存在」时：先问清系统的世界假设——OWA 下「没有记录」≠「没有维修」，否定查询会遗漏；CWA 下结果确定，但要求数据完备。话术落点：「我们的查询 / 执行 / 治理三层都是封闭世界（CWA），否定查询语义清晰、结果确定；如果您的场景必须开放世界推理，那是 Q1 的事——走 RDF 接口接生态推理引擎，我们不硬做。」"
+  },
+  {
+    no: "误区四", title: "过早追求全栈组合",
+    body: "看到「全栈组合」的理想形态后，试图一步到位搭建四层架构。实际上，在没有验证单一本体论价值前就搭建组合系统，会导致架构复杂度失控、团队认知负荷过重、每一层都做不好。",
+    right: "正确做法：先用决策树选定一个核心本体论，验证价值后再逐步叠加其他层。组合是演进而来的，不是设计出来的。",
+    talk: "客户要求一步到位搭四层全栈时：引用演进原则——组合是演进而来的，不是设计出来的；未验证单一象限价值就上组合，架构复杂度失控、每一层都做不好。话术落点：「先用决策树选定一个核心象限做 POC（2~4 周），验证价值后再按实际痛点叠加第二层——紫皮书三种组合模式都是这么长出来的，我们的落地路线图也是这么设计的。」"
+  }
+];
+
+/* ============ 渲染：象限卡片（结果页与四象限详情共用） ============ */
+
+function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+function quadrantCardHTML(q){
+  return '<div class="quad-card ' + q.cls + '">'
+    + '<div class="quad-head"><span class="quad-name">' + esc(q.name) + '</span>'
+    + '<span class="quad-zh">' + esc(q.zh) + '</span>'
+    + '<span class="layer-badge">' + esc(q.layer) + '</span></div>'
+    + '<p class="quad-core"><b>核心命题：</b>' + esc(q.core) + '</p>'
+    + '<p class="quad-world">' + esc(q.world) + '</p>'
+    + '<div class="quad-sec"><p class="quad-sec-title">典型技术栈（紫皮书 7.2 架构栈）</p><ul>'
+    + q.stack.map(function(s){ return '<li>' + esc(s) + '</li>'; }).join('')
+    + '</ul></div>'
+    + '<div class="quad-sec"><p class="quad-sec-title">我们的角色映射（enterprise-landing.md §一点五）</p>'
+    + '<div class="role-rows">'
+    + '<div class="role-row"><span class="role-k">卖什么</span><span class="role-v">' + esc(q.sell) + '</span></div>'
+    + '<div class="role-row"><span class="role-k">不卖什么</span><span class="role-v">' + esc(q.notSell) + '</span></div>'
+    + '<div class="role-row"><span class="role-k">走生态接口</span><span class="role-v">' + esc(q.eco) + '</span></div>'
+    + '</div><p class="role-quote">' + esc(q.roleQuote) + '</p></div>'
+    + '<div class="poc-box"><p class="poc-type">推荐 POC 类型：' + esc(q.pocType) + '</p>'
+    + '<p class="poc-desc">' + esc(q.pocDesc) + '</p></div>'
+    + '</div>';
+}
+
+function renderQuadGrid(){
+  var mount = document.getElementById("quadGrid");
+  var html = "";
+  ["semantic","kg","palantir","agent"].forEach(function(k){ html += quadrantCardHTML(QUADRANTS[k]); });
+  mount.innerHTML = html;
+}
+
+/* ============ 决策树状态机（FR-1） ============ */
+
+var state = { step: 0, answers: [], finished: false };
+
+function renderProgress(){
+  var el = document.getElementById("qProgress");
+  var html = "";
+  QUESTIONS.forEach(function(q, i){
+    var cls = "";
+    var mark = "";
+    if (state.finished) {
+      cls = (i < state.step) ? "done" : "";
+      if (i === state.step) { cls = "stop"; mark = " · 在此终止"; }
+    } else if (i === state.step) { cls = "current"; }
+    else if (i < state.step) { cls = "done"; }
+    var ans = state.answers[i];
+    var ansLabel = (ans === "yes") ? "答「是」→ 终止" : (ans === "no" ? "答「否」→ 下一问" : "");
+    html += '<li class="' + cls + '"><span class="qno">' + q.id + '</span>'
+      + '<span>' + esc(q.text) + (ansLabel ? ' <b>· ' + ansLabel + '</b>' : '') + (mark ? ' <b>' + mark + '</b>' : '') + '</span></li>';
+  });
+  if (state.finished && state.step >= QUESTIONS.length) {
+    html += '<li class="stop"><span class="qno">兜底</span><span>四问全「否」→ 默认：Agent Ontology 治理层</span></li>';
+  }
+  el.innerHTML = html;
+}
+
+function renderQuestion(){
+  var card = document.getElementById("questionCard");
+  if (state.finished) { card.style.display = "none"; return; }
+  card.style.display = "";
+  var q = QUESTIONS[state.step];
+  var probes = q.probes.length
+    ? '<ul class="q-probes">' + q.probes.map(function(p){ return '<li>' + esc(p) + '</li>'; }).join('') + '</ul>'
+    : '<p class="q-probes" style="color:var(--muted);font-size:13px">本问为决策树最后一层：答「是」进入治理层；答「否」则四问全否，默认落治理层兜底。</p>';
+  card.innerHTML =
+    '<p class="q-head">' + q.id + ' / 共四问 · 逐层排除</p>'
+    + '<p class="q-text">' + esc(q.text) + '</p>'
+    + '<p class="q-std">' + esc(q.std) + '</p>'
+    + probes
+    + '<div class="q-buttons">'
+    + '<button type="button" class="btn btn-primary" data-ans="yes">是</button>'
+    + '<button type="button" class="btn" data-ans="no">否</button>'
+    + '</div>'
+    + '<div class="q-reset"><button type="button" class="btn" id="resetBtn">重新开始</button></div>';
+  card.querySelectorAll("[data-ans]").forEach(function(b){
+    b.addEventListener("click", function(){ answer(b.getAttribute("data-ans") === "yes"); });
+  });
+  card.querySelector("#resetBtn").addEventListener("click", resetWizard);
+}
+
+function answer(yes){
+  var q = QUESTIONS[state.step];
+  state.answers[state.step] = yes ? "yes" : "no";
+  if (yes) {
+    state.finished = true;               // 答「是」即终止
+    renderResult(q.yes, q.id + '「' + q.text + '」答「是」→ 终止，推荐象限：');
+  } else {
+    state.step += 1;
+    if (state.step >= QUESTIONS.length) { // 四问全否 → 默认治理层兜底
+      state.finished = true;
+      renderResult("agent", "Q1~Q4 全部答「否」→ 按紫皮书决策树默认兜底：");
+    } else {
+      renderQuestion();
+    }
+  }
+  renderProgress();
+}
+
+function renderResult(quadrantKey, pathText){
+  var q = QUADRANTS[quadrantKey];
+  var mount = document.getElementById("resultMount");
+  mount.innerHTML =
+    '<div class="quad-card result-card ' + q.cls + '" id="resultCard">'
+    + '<p class="result-path">决策路径：' + esc(pathText) + '</p>'
+    + quadrantCardHTML(q).replace(/^<div[^>]*>/, "").replace(/<\/div>$/, "")
+    + '<div class="result-actions no-print">'
+    + '<button type="button" class="btn" id="againBtn">再走一遍决策树</button>'
+    + '<a class="btn" href="#quadrants" style="text-decoration:none">查看四个象限完整对照 ↓</a>'
+    + '</div>'
+    + '</div>';
+  document.getElementById("againBtn").addEventListener("click", resetWizard);
+  var el = document.getElementById("resultCard");
+  if (el && el.scrollIntoView) { el.scrollIntoView({ behavior: "smooth", block: "nearest" }); }
+}
+
+function resetWizard(){
+  state = { step: 0, answers: [], finished: false };
+  document.getElementById("resultMount").innerHTML = "";
+  renderQuestion();
+  renderProgress();
+  var wiz = document.getElementById("decision");
+  if (wiz && wiz.scrollIntoView) { wiz.scrollIntoView({ behavior: "smooth", block: "start" }); }
+}
+
+/* ============ 16 场景表：tab 筛选 + 关键词搜索（FR-3） ============ */
+
+var filter = { tab: "all", query: "" };
+
+var TABS = [
+  { key: "all",      label: "全部" },
+  { key: "semantic", label: "Semantic Ontology" },
+  { key: "kg",       label: "KG Schema" },
+  { key: "palantir", label: "Palantir 式执行层" },
+  { key: "agent",    label: "Agent 治理层" },
+  { key: "combo",    label: "组合模式" }
+];
+
+var QUAD_CLASS = { semantic: "q-semantic", kg: "q-kg", palantir: "q-palantir", agent: "q-agent", combo: "all" };
+
+function renderTabs(){
+  var el = document.getElementById("scenarioTabs");
+  el.innerHTML = TABS.map(function(t){
+    var n = (t.key === "all") ? SCENARIOS.length
+      : SCENARIOS.filter(function(s){ return s.quadrant === t.key; }).length;
+    var active = (filter.tab === t.key) ? " active" : "";
+    return '<button type="button" class="tab' + active + '" data-tab="' + t.key + '" role="tab">'
+      + esc(t.label) + ' · ' + n + '</button>';
+  }).join("");
+  el.querySelectorAll("[data-tab]").forEach(function(b){
+    b.addEventListener("click", function(){
+      filter.tab = b.getAttribute("data-tab");
+      renderTabs(); renderScenarios();
+    });
+  });
+}
+
+function renderScenarios(){
+  var body = document.getElementById("scenarioBody");
+  var q = filter.query.trim().toLowerCase();
+  var shown = 0;
+  var html = SCENARIOS.map(function(s){
+    var matchTab = (filter.tab === "all") || (s.quadrant === filter.tab);
+    var hay = (s.scene + " " + s.need + " " + s.onto + " " + s.reason).toLowerCase();
+    var matchQ = !q || hay.indexOf(q) > -1;
+    var visible = matchTab && matchQ;
+    if (visible) shown++;
+    return '<tr class="' + (visible ? "" : "is-hidden") + '">'
+      + '<td class="scene-no">' + s.no + '</td>'
+      + '<td class="scene-name">' + esc(s.scene) + '</td>'
+      + '<td>' + esc(s.need) + '</td>'
+      + '<td><span class="q-badge ' + QUAD_CLASS[s.quadrant] + '">' + esc(s.onto) + '</span></td>'
+      + '<td>' + esc(s.reason) + '</td>'
+      + '</tr>';
+  }).join("");
+  if (shown === 0) {
+    html += '<tr id="emptyRow" class="no-print"><td colspan="5" style="text-align:center;color:var(--muted);padding:22px">'
+      + '没有匹配的场景——试试别的关键词，或切回「全部」。也可以直接走上方决策树四问。</td></tr>';
+  }
+  body.innerHTML = html;
+  document.getElementById("rowCount").textContent = "显示 " + shown + " / " + SCENARIOS.length + " 行";
+}
+
+document.getElementById("scenarioSearch").addEventListener("input", function(e){
+  filter.query = e.target.value;
+  renderScenarios();
+});
+
+/* ============ 四大红线（FR-5） ============ */
+
+function renderPitfalls(){
+  var mount = document.getElementById("pitGrid");
+  mount.innerHTML = PITFALLS.map(function(p){
+    return '<div class="pit-card">'
+      + '<p class="pit-no">' + esc(p.no) + '</p>'
+      + '<h3>' + esc(p.title) + '</h3>'
+      + '<p class="pit-body">' + esc(p.body) + ' <span class="pit-right">' + esc(p.right) + '</span></p>'
+      + '<div class="pit-talk"><p class="talk-title">售前话术 · 遇到该诉求如何回应</p>'
+      + '<p class="talk-body">' + esc(p.talk) + '</p></div>'
+      + '</div>';
+  }).join("");
+}
+
+/* ============ 主题切换（NFR-2，默认浅色） ============ */
+
+var themeBtn = document.getElementById("themeToggle");
+function applyTheme(t){
+  document.documentElement.setAttribute("data-theme", t);
+  themeBtn.textContent = (t === "dark") ? "切换浅色" : "切换深色";
+  try { localStorage.setItem("oag-toolkit-theme", t); } catch (e) {}
+}
+themeBtn.addEventListener("click", function(){
+  var cur = document.documentElement.getAttribute("data-theme");
+  applyTheme(cur === "dark" ? "light" : "dark");
+});
+try {
+  var saved = localStorage.getItem("oag-toolkit-theme");
+  if (saved === "dark" || saved === "light") applyTheme(saved);
+} catch (e) {}
+
+/* ============ 启动 ============ */
+renderQuadGrid();
+renderTabs();
+renderScenarios();
+renderPitfalls();
+renderQuestion();
+renderProgress();
+
+})();
+</script>
+</body>
+</html>

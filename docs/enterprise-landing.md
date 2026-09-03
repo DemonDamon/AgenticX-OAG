@@ -102,6 +102,8 @@
 
 **售前对话规则**：第一次客户会议不谈产品，先用紫皮书决策树四问定位客户需求（见下节）。客户要的是四种本体中的哪一种，决定我们卖什么、不卖什么。
 
+> **售前物料**：决策树四问 + 16 场景匹配表交互工具包（可离线双击打开、可打印为客户 PDF）→ [presales/quadrant-decision-toolkit.html](../presales/quadrant-decision-toolkit.html)；配套话术手册 → [docs/presales/four-quadrant-playbook.md](presales/four-quadrant-playbook.md)
+
 ***
 
 ## 二、企业落地三步走
