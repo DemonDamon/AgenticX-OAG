@@ -1,0 +1,145 @@
+scenario: bank-aml
+version: 1
+# 发放待审核 + 反洗钱（银行类）QA 种子集。
+# golden_object_ids 均引用 prototype/scenes/bank-aml.json 的节点 id（20 节点）。
+items:
+  - id: qa-001
+    question: 哪些客户的风险等级为高？
+    golden_object_ids: [CUST-01, CUST-03]
+    golden_answer_keywords: [华鑫贸易, 凯越]
+  - id: qa-002
+    question: 深圳华鑫贸易有限公司是什么行业的客户？风险等级如何？
+    golden_object_ids: [CUST-01]
+    golden_answer_keywords: [大宗商品贸易, 高]
+  - id: qa-003
+    question: 东莞凯越进出口公司是哪一年成立的？
+    golden_object_ids: [CUST-03]
+    golden_answer_keywords: ["2021"]
+  - id: qa-004
+    question: 广州恒达实业有限公司位于哪个城市？风险等级是什么？
+    golden_object_ids: [CUST-02]
+    golden_answer_keywords: [广州, 中]
+  - id: qa-005
+    question: 深圳华鑫贸易有限公司名下有哪些账户？
+    golden_object_ids: [CUST-01, ACCT-01]
+    golden_answer_keywords: [对公账户]
+  - id: qa-006
+    question: 恒达实业基本户的账户余额是多少？
+    golden_object_ids: [ACCT-02]
+    golden_answer_keywords: ["9200000"]
+  - id: qa-007
+    question: 凯越进出口的美元户是什么时候开立的？账户类型是什么？
+    golden_object_ids: [ACCT-03]
+    golden_answer_keywords: ["2021-09", 外币结算]
+  - id: qa-008
+    question: 哪笔交易的金额最大？金额是多少？
+    golden_object_ids: [TXN-01]
+    golden_answer_keywords: [跨行大额转账, "5200000"]
+  - id: qa-009
+    question: 华鑫贸易对公账户发起了哪些交易？
+    golden_object_ids: [ACCT-01, TXN-01, TXN-02]
+    golden_answer_keywords: [跨行大额转账, 拆分]
+  - id: qa-010
+    question: 跨境美元汇款 20260812-B 的收款对手是谁？金额多少？
+    golden_object_ids: [TXN-03]
+    golden_answer_keywords: [境外贸易对手, "145000"]
+  - id: qa-011
+    question: 哪些交易被标记为可疑交易？
+    golden_object_ids: [TXN-01, TXN-02, TXN-03]
+    golden_answer_keywords: [20260810-A, 拆分, 20260812-B]
+  - id: qa-012
+    question: 可疑交易报告 STR-2026-0317 的上报原因是什么？当前状态如何？
+    golden_object_ids: [STR-01]
+    golden_answer_keywords: [拆分交易规避大额报告, 待上报]
+  - id: qa-013
+    question: 可疑交易报告 STR-2026-0319 是由哪笔交易触发的？上报原因是什么？
+    golden_object_ids: [STR-02, TXN-03]
+    golden_answer_keywords: [资金快进快出, 20260812-B]
+  - id: qa-014
+    question: 哪笔交易命中了制裁名单？命中了什么名单？
+    golden_object_ids: [TXN-01, SAN-01]
+    golden_answer_keywords: [跨行大额转账, OFAC]
+  - id: qa-015
+    question: 制裁名单命中 OFAC-2026-041 匹配的主体是什么？命中日期是哪天？
+    golden_object_ids: [SAN-01]
+    golden_answer_keywords: [离岸账户关联主体, "2026-08-11"]
+  - id: qa-016
+    question: 深圳华鑫贸易有限公司提交了什么贷款申请？金额和状态如何？
+    golden_object_ids: [CUST-01, LOAN-01]
+    golden_answer_keywords: [流动资金贷款, "8000000", 待审核]
+  - id: qa-017
+    question: 恒达实业的设备更新贷款申请状态如何？金额是多少？
+    golden_object_ids: [LOAN-02]
+    golden_answer_keywords: [已通过, "15000000"]
+  - id: qa-018
+    question: 华鑫贸易的流动资金贷款申请用什么作抵押？评估价值是多少？
+    golden_object_ids: [LOAN-01, COLL-01]
+    golden_answer_keywords: [存货, "6000000"]
+  - id: qa-019
+    question: 恒达实业厂房抵押的评估价值是多少？位于哪里？
+    golden_object_ids: [COLL-02]
+    golden_answer_keywords: ["18000000", 广州]
+  - id: qa-020
+    question: 哪些客户接受过尽职调查？
+    golden_object_ids: [CUST-01, CUST-03, DD-01, DD-02]
+    golden_answer_keywords: [华鑫, 凯越]
+  - id: qa-021
+    question: 华鑫贸易的尽调报告是什么级别？结论是什么？
+    golden_object_ids: [DD-01]
+    golden_answer_keywords: [强化, 需补充实际受益人信息]
+  - id: qa-022
+    question: 凯越进出口的常规尽调结论是什么？
+    golden_object_ids: [DD-02]
+    golden_answer_keywords: [无异常]
+  - id: qa-023
+    question: 华鑫贸易的贷款申请由谁审批？
+    golden_object_ids: [LOAN-01, APPR-01]
+    golden_answer_keywords: [王敏]
+  - id: qa-024
+    question: 可疑交易报告 STR-2026-0317 由谁复核？
+    golden_object_ids: [STR-01, APPR-02]
+    golden_answer_keywords: [李强]
+  - id: qa-025
+    question: 反洗钱合规官李强属于哪个部门？担任什么角色？
+    golden_object_ids: [APPR-02]
+    golden_answer_keywords: [省分行合规部, 合规官]
+  - id: qa-026
+    question: 对公客户经理王敏属于哪个部门？
+    golden_object_ids: [APPR-01]
+    golden_answer_keywords: [深圳分行公司金融部]
+  - id: qa-027
+    question: 系统中共有哪些客户？分别位于哪些城市？
+    golden_object_ids: [CUST-01, CUST-02, CUST-03]
+    golden_answer_keywords: [深圳, 广州, 东莞]
+  - id: qa-028
+    question: 哪些账户是 2020 年之后开立的？
+    golden_object_ids: [ACCT-01, ACCT-03]
+    golden_answer_keywords: ["2020-03", "2021-09"]
+  - id: qa-029
+    question: 拆分为多笔小额转账这笔交易的对手方是什么？被标记为哪份可疑交易报告？
+    golden_object_ids: [TXN-02, STR-01]
+    golden_answer_keywords: [多个个人账户, STR-2026-0317]
+  - id: qa-030
+    question: 哪份贷款申请已经通过审批？
+    golden_object_ids: [LOAN-02]
+    golden_answer_keywords: [已通过, 恒达]
+  - id: qa-031
+    question: 华鑫贸易对公账户的余额是多少？
+    golden_object_ids: [ACCT-01]
+    golden_answer_keywords: ["3850000"]
+  - id: qa-032
+    question: 哪些交易涉及离岸或境外对手方？
+    golden_object_ids: [TXN-01, TXN-03]
+    golden_answer_keywords: [离岸账户, 境外贸易对手]
+  - id: qa-033
+    question: 华鑫贸易的强化尽调报告是哪天完成的？尽调结论如何？
+    golden_object_ids: [DD-01]
+    golden_answer_keywords: ["2026-08-09", 需补充实际受益人信息]
+  - id: qa-034
+    question: 可疑交易报告 STR-2026-0317 和 STR-2026-0319 的优先级分别是什么？
+    golden_object_ids: [STR-01, STR-02]
+    golden_answer_keywords: [高]
+  - id: qa-035
+    question: 恒达实业的设备更新贷款是什么类型的贷款？申请日期是哪天？
+    golden_object_ids: [LOAN-02]
+    golden_answer_keywords: [固定资产贷款, "2026-07-25"]

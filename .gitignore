@@ -11,6 +11,9 @@ research/codedeepresearch/*/upstream/
 *.sqlite
 *.db
 
+# Eval report outputs (P06; reports are regenerated on demand)
+reports/
+
 # Python
 __pycache__/
 *.py[cod]

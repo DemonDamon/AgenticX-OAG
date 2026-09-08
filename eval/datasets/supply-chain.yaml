@@ -1,0 +1,61 @@
+scenario: supply-chain
+version: 1
+# 制造供应链 QA 种子集。
+# golden_object_ids 均引用 prototype/scenes/supply-chain.json 的节点 id（14 节点）。
+items:
+  - id: qa-001
+    question: 高精度齿轮由哪个供应商供货？
+    golden_object_ids: [P-2001, S-1001]
+    golden_answer_keywords: [华南精密制造]
+  - id: qa-002
+    question: 华南精密制造供应哪些零件？
+    golden_object_ids: [S-1001, P-2001, P-2002, P-2005]
+    golden_answer_keywords: [高精度齿轮, 伺服电机, 电机控制器]
+  - id: qa-003
+    question: 伺服电机在哪个工厂生产？
+    golden_object_ids: [P-2002, PL-4001]
+    golden_answer_keywords: [深圳一厂]
+  - id: qa-004
+    question: 深沟球轴承的供应商信用评级如何？位于哪个城市？
+    golden_object_ids: [P-2003, S-1002]
+    golden_answer_keywords: [B+, 苏州]
+  - id: qa-005
+    question: 铝合金壳体在哪个工厂生产？该厂产能是多少？
+    golden_object_ids: [P-2004, PL-4003]
+    golden_answer_keywords: [成都三厂, "6000"]
+  - id: qa-006
+    question: 订单 PO-2026-018 包含哪些零件？订单金额是多少？
+    golden_object_ids: [O-3001, P-2001, P-2003, P-2005]
+    golden_answer_keywords: ["128000"]
+  - id: qa-007
+    question: 订单 PO-2026-021 下单给了哪个供应商？金额是多少？
+    golden_object_ids: [O-3002, S-1002]
+    golden_answer_keywords: [华东轴承集团, "460000"]
+  - id: qa-008
+    question: 哪个工厂通过了 ISO14001 认证？产能是多少？
+    golden_object_ids: [PL-4002]
+    golden_answer_keywords: [苏州二厂, "12000"]
+  - id: qa-009
+    question: 年度框架采购协议的期限和总价值是多少？哪些供应商签订了该协议？
+    golden_object_ids: [C-5001, S-1001, S-1002]
+    golden_answer_keywords: ["3年", "2500000"]
+  - id: qa-010
+    question: 电机控制器的单价是多少？属于什么类别？
+    golden_object_ids: [P-2005]
+    golden_answer_keywords: ["320", 电控]
+  - id: qa-011
+    question: 苏州二厂生产哪些零件？
+    golden_object_ids: [PL-4002, P-2003]
+    golden_answer_keywords: [深沟球轴承]
+  - id: qa-012
+    question: 西部材料科技的信用评级和所在地是什么？
+    golden_object_ids: [S-1003]
+    golden_answer_keywords: [A-, 成都]
+  - id: qa-013
+    question: 哪些供应商签订了年度框架采购协议？
+    golden_object_ids: [C-5001, S-1001, S-1002]
+    golden_answer_keywords: [华南精密制造, 华东轴承集团]
+  - id: qa-014
+    question: 订单 PO-2026-018 的预计交付周期是多少天？当前状态如何？
+    golden_object_ids: [O-3001]
+    golden_answer_keywords: ["14", active]

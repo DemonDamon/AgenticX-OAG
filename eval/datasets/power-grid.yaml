@@ -1,0 +1,65 @@
+scenario: power-grid
+version: 1
+# 知识大脑（能源类）QA 种子集。
+# golden_object_ids 均引用 prototype/scenes/power-grid.json 的节点 id（17 节点）。
+items:
+  - id: qa-001
+    question: 1号主变位于哪个变电站？健康度是多少？
+    golden_object_ids: [DEV-01, SUB-01]
+    golden_answer_keywords: [珠江500kV变电站, "87"]
+  - id: qa-002
+    question: 珠江500kV变电站装有哪些设备？
+    golden_object_ids: [SUB-01, DEV-01, DEV-02]
+    golden_answer_keywords: [1号主变, 2号主变]
+  - id: qa-003
+    question: 断路器SF6气压偏低这个缺陷的严重程度如何？由什么方式发现？
+    golden_object_ids: [DEF-02]
+    golden_answer_keywords: [一般, 在线监测]
+  - id: qa-004
+    question: 主变油温异常缺陷触发了哪个工单？工单优先级如何？
+    golden_object_ids: [DEF-01, WO-01]
+    golden_answer_keywords: [GZ-2026-0881, 高]
+  - id: qa-005
+    question: 工单 GZ-2026-0881 指派给了哪个班组？
+    golden_object_ids: [WO-01, TEAM-01]
+    golden_answer_keywords: [变电检修一班]
+  - id: qa-006
+    question: 工单 SZ-2026-1142 的当前状态是什么？工作类型是什么？
+    golden_object_ids: [WO-02]
+    golden_answer_keywords: [处理中, 检修]
+  - id: qa-007
+    question: 变电检修二班的基地和专长是什么？
+    golden_object_ids: [TEAM-02]
+    golden_answer_keywords: [深圳, 断路器/GIS]
+  - id: qa-008
+    question: 珠江站10kV馈线跳闸这次停电事件持续了多久？影响了多少客户？原因是什么？
+    golden_object_ids: [OUT-01]
+    golden_answer_keywords: [32分钟, "1450", 主变过热保护动作]
+  - id: qa-009
+    question: 10kV工业园甲线为哪些客户供电？负载率是多少？
+    golden_object_ids: [FE-01, CUST-01]
+    golden_answer_keywords: [广汽新能源工厂, "78%"]
+  - id: qa-010
+    question: 前海数据中心由哪条馈线供电？该馈线属于哪个变电站？
+    golden_object_ids: [CUST-02, FE-02, SUB-02]
+    golden_answer_keywords: [前海湾乙线, 前海220kV变电站]
+  - id: qa-011
+    question: 220kV断路器CB-201 的制造商是谁？健康度是多少？
+    golden_object_ids: [DEV-03]
+    golden_answer_keywords: [平高电气, "76"]
+  - id: qa-012
+    question: GIS组合电器G-01 位于哪个变电站？
+    golden_object_ids: [DEV-04, SUB-02]
+    golden_answer_keywords: [前海220kV变电站]
+  - id: qa-013
+    question: 断路器SF6气压偏低缺陷是哪天发现的？触发了什么工单？
+    golden_object_ids: [DEF-02, WO-02]
+    golden_answer_keywords: ["2026-08-12", SZ-2026-1142]
+  - id: qa-014
+    question: 哪个缺陷导致了珠江站10kV馈线跳闸停电事件？
+    golden_object_ids: [OUT-01, DEF-01]
+    golden_answer_keywords: [主变油温异常]
+  - id: qa-015
+    question: 变电检修一班有多少名成员？基地在哪里？专长是什么？
+    golden_object_ids: [TEAM-01]
+    golden_answer_keywords: [广州, 一次设备]

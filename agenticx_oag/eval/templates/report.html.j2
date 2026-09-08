@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AgenticX-OAG POC 评测报告：{{ meta.scenario }}</title>
+<style>
+  :root { color-scheme: light; }
+  body { font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+         max-width: 960px; margin: 2rem auto; padding: 0 1rem; color: #1f2937; }
+  h1 { font-size: 1.6rem; border-bottom: 2px solid #2563eb; padding-bottom: .4rem; }
+  h2 { font-size: 1.15rem; margin-top: 2rem; }
+  table { border-collapse: collapse; width: 100%; margin: .8rem 0; font-size: .92rem; }
+  th, td { border: 1px solid #d1d5db; padding: .45rem .6rem; text-align: left; }
+  th { background: #f3f4f6; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .meta-grid { display: grid; grid-template-columns: max-content 1fr; gap: .25rem .9rem; }
+  .meta-grid dt { font-weight: 600; color: #374151; }
+  .meta-grid dd { margin: 0; word-break: break-all; }
+  code, pre { background: #f3f4f6; border-radius: 4px; }
+  code { padding: .1rem .3rem; }
+  pre { padding: .6rem .8rem; overflow-x: auto; }
+  .win { color: #16a34a; font-weight: 600; }
+  .fail { color: #dc2626; }
+  footer { color: #6b7280; font-size: .85rem; margin-top: 2.5rem; }
+</style>
+</head>
+<body>
+<h1>AgenticX-OAG POC 评测报告：{{ meta.scenario }}</h1>
+
+<h2>1. 运行元信息（可复现）</h2>
+<dl class="meta-grid">
+  <dt>场景</dt><dd>{{ meta.scenario }}</dd>
+  <dt>数据集版本</dt><dd>v{{ meta.dataset_version }}</dd>
+  <dt>LLM</dt><dd>{{ meta.llm }}</dd>
+  <dt>运行时间</dt><dd>{{ meta.ran_at }}</dd>
+  <dt>Git SHA</dt><dd><code>{{ meta.git_sha }}</code></dd>
+  <dt>样本数</dt><dd>{{ item_count }} 条结果 / {{ failure_count }} 个失败项</dd>
+  {% for name, summary in meta.targets.items() %}
+  <dt>Target · {{ name }}</dt><dd>{{ summary }}</dd>
+  {% endfor %}
+  <dt>公平性对齐</dt><dd>{{ meta.fairness_note }}</dd>
+</dl>
+
+<h2>2. 指标对比总表（mean / p50 / p95）</h2>
+<table>
+  <thead>
+    <tr><th>指标</th>{% for target in result.summaries %}<th>{{ target }}</th>{% endfor %}</tr>
+  </thead>
+  <tbody>
+  {% for row in rows %}
+    <tr>
+      <td>{{ row.label }}</td>
+      {% for target in result.summaries %}{% set cell = row.cells.get(target) %}
+      <td class="num">{% if cell %}{{ "%0.3f" | format(cell.mean) }}（p50 {{ "%0.3f" | format(cell.p50) }} / p95 {{ "%0.3f" | format(cell.p95) }} / n={{ cell.n }}）{% else %}—{% endif %}</td>
+      {% endfor %}
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<h2>3. 逐指标 win/lose</h2>
+{% if comparisons %}
+<table>
+  <thead><tr><th>指标</th><th>方向</th><th>最优 target</th><th>领先幅度</th></tr></thead>
+  <tbody>
+  {% for comparison in comparisons %}
+    <tr>
+      <td>{{ labels[comparison.metric] }}</td>
+      <td>{{ "越高越好" if comparison.metric in higher_is_better else "越低越好" }}</td>
+      <td class="win">{{ comparison.winner }}</td>
+      <td class="num">{{ "%+0.3f" | format(comparison.delta) }}（{% for target, value in comparison.values.items() %}{{ target }}={{ "%0.3f" | format(value) }}{% if not loop.last %}，{% endif %}{% endfor %}）</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p>仅一个 target，无对照判定。</p>
+{% endif %}
+
+<h2>4. 失败项</h2>
+{% if result.failures %}
+<table>
+  <thead><tr><th>QA</th><th>Target</th><th>错误</th></tr></thead>
+  <tbody>
+  {% for failure in result.failures %}
+    <tr><td>{{ failure.item_id }}</td><td class="fail">{{ failure.target }}</td><td>{{ failure.error }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p>无失败项。</p>
+{% endif %}
+
+<h2>5. 复现命令</h2>
+<pre><code>{{ meta.reproduce_command }}</code></pre>
+
+<footer>AgenticX-OAG POC 评测工具包（P06）自动生成。</footer>
+</body>
+</html>

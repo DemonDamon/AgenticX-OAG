@@ -1,0 +1,57 @@
+# AgenticX-OAG POC 评测报告：{{ meta.scenario }}
+
+## 1. 运行元信息（可复现）
+
+| 字段 | 值 |
+| --- | --- |
+| 场景 | {{ meta.scenario }} |
+| 数据集版本 | v{{ meta.dataset_version }} |
+| LLM | {{ meta.llm }} |
+| 运行时间 | {{ meta.ran_at }} |
+| Git SHA | `{{ meta.git_sha }}` |
+| 样本数 | {{ item_count }} 条结果 / {{ failure_count }} 个失败项 |
+
+被测目标配置：
+
+{% for name, summary in meta.targets.items() %}
+- **{{ name }}**：{{ summary }}
+{% endfor %}
+公平性对齐声明：{{ meta.fairness_note }}
+
+## 2. 指标对比总表（mean / p50 / p95）
+
+| 指标 {% for target in result.summaries %}| {{ target }} {% endfor %}|
+| --- {% for target in result.summaries %}| ---: {% endfor %}|
+{% for row in rows %}
+| {{ row.label }} {% for target in result.summaries %}{% set cell = row.cells.get(target) %}{% if cell %}| {{ "%0.3f" | format(cell.mean) }}（p50 {{ "%0.3f" | format(cell.p50) }} / p95 {{ "%0.3f" | format(cell.p95) }} / n={{ cell.n }}） {% else %}| — {% endif %}{% endfor %}|
+{% endfor %}
+
+## 3. 逐指标 win/lose
+
+{% if comparisons %}
+| 指标 | 方向 | 最优 target | 领先幅度 |
+| --- | --- | --- | --- |
+{% for comparison in comparisons %}
+| {{ labels[comparison.metric] }} | {{ "越高越好" if comparison.metric in higher_is_better else "越低越好" }} | {{ comparison.winner }} | {{ "%+0.3f" | format(comparison.delta) }}（{% for target, value in comparison.values.items() %}{{ target }}={{ "%0.3f" | format(value) }}{% if not loop.last %}，{% endif %}{% endfor %}） |
+{% endfor %}
+{% else %}
+仅一个 target，无对照判定。
+{% endif %}
+
+## 4. 失败项
+
+{% if result.failures %}
+| QA | Target | 错误 |
+| --- | --- | --- |
+{% for failure in result.failures %}
+| {{ failure.item_id }} | {{ failure.target }} | {{ failure.error }} |
+{% endfor %}
+{% else %}
+无失败项。
+{% endif %}
+
+## 5. 复现命令
+
+```bash
+{{ meta.reproduce_command }}
+```

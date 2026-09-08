@@ -12,6 +12,9 @@ dependencies = [
     "pyyaml",
 ]
 
+[project.scripts]
+agenticx-oag = "agenticx_oag.cli:main"
+
 [project.optional-dependencies]
 dev = [
     "pytest",
@@ -34,6 +37,9 @@ ingest = [
 owl = [
     "rdflib>=7",
     "pyshacl>=0.26",
+]
+eval = [
+    "jinja2>=3",
 ]
 
 [tool.hatch.build.targets.wheel]
