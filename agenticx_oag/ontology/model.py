@@ -138,7 +138,8 @@ class Ontology(BaseModel):
     action_types: list[ActionType] = Field(default_factory=list)
     metadata: dict[str, str] = Field(default_factory=dict)
 
-    def validate(self) -> None:
+    # plan 契约 API：覆盖 pydantic v2 已废弃的 BaseModel.validate 类方法
+    def validate(self) -> None:  # type: ignore[override]
         """Validate reference integrity (FR-3) and type constraints (FR-4).
 
         All problems are aggregated into a single

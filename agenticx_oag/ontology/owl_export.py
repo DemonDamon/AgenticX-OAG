@@ -14,7 +14,7 @@ rdflib is required; the core install stays dependency-free (NFR-2).
 
 from __future__ import annotations
 
-from rdflib import RDF, RDFS, OWL, XSD, Graph, Literal, URIRef
+from rdflib import OWL, RDF, RDFS, XSD, Graph, Literal, URIRef
 
 from agenticx_oag.ontology.model import DataType, Ontology
 

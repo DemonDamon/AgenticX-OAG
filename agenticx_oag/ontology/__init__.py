@@ -25,16 +25,15 @@ __all__ = [
     "LinkType",
     "ObjectType",
     "Ontology",
-    "PropertyType",
     "OntologyError",
     "OntologyValidationError",
-    "load_ontology",
-    "dump_ontology",
-    "to_yaml",
-    # Lazy re-exports backed by the [owl] extra (rdflib / pyshacl):
-    "to_turtle",
-    "to_jsonld",
+    "PropertyType",
     "build_shapes",
+    "dump_ontology",
+    "load_ontology",
+    "to_jsonld",
+    "to_turtle",
+    "to_yaml",
     "validate_graph",
 ]
 

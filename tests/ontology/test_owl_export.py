@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from rdflib import RDF, RDFS, OWL, Graph, URIRef
+from rdflib import OWL, RDF, RDFS, Graph, URIRef
 from rdflib.namespace import XSD
 
 from agenticx_oag.ontology import Ontology, to_jsonld, to_turtle
@@ -24,7 +24,6 @@ def test_turtle_parseable(bank_aml_ontology: Ontology) -> None:
 
 def test_tbox_structure(bank_aml_ontology: Ontology) -> None:
     graph = Graph().parse(data=to_turtle(bank_aml_ontology), format="turtle")
-    base = base_iri(bank_aml_ontology)
 
     classes = set(graph.subjects(RDF.type, OWL.Class))
     assert classes == {class_iri(bank_aml_ontology, ot.api_name) for ot in bank_aml_ontology.object_types}

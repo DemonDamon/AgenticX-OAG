@@ -8,12 +8,17 @@ to the instance layer managed by the graph store).
 
 from __future__ import annotations
 
+from pyshacl import validate
 from rdflib import RDF, RDFS, Graph, Literal, URIRef
 from rdflib.namespace import SH
-from pyshacl import validate
 
 from agenticx_oag.ontology.model import Ontology
-from agenticx_oag.ontology.owl_export import base_iri, class_iri, property_iri, xsd_datatype
+from agenticx_oag.ontology.owl_export import (
+    base_iri,
+    class_iri,
+    property_iri,
+    xsd_datatype,
+)
 
 
 def build_shapes_graph(ontology: Ontology) -> Graph:

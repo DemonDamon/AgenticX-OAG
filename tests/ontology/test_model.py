@@ -326,21 +326,17 @@ def test_action_type_references() -> None:
 
 def test_core_import_does_not_require_rdflib() -> None:
     """Importing the core package must work with rdflib/pyshacl unavailable."""
-    code = "\n".join(
-        [
-            "import sys",
-            "sys.modules['rdflib'] = None",
-            "sys.modules['pyshacl'] = None",
-            "import agenticx_oag.ontology as o",
-            "assert o.Ontology is not None",
-            "try:",
-            "    o.to_turtle",
-            "    raise SystemExit('to_turtle should not resolve')",
-            "except ImportError:",
-            "    pass",
-            "print('ok')",
-        ]
-    )
+    code = """import sys
+sys.modules['rdflib'] = None
+sys.modules['pyshacl'] = None
+import agenticx_oag.ontology as o
+assert o.Ontology is not None
+try:
+    o.to_turtle
+    raise SystemExit('to_turtle should not resolve')
+except ImportError:
+    pass
+print('ok')"""
     env = {k: v for k, v in __import__('os').environ.items() if k not in ('PYTHONHOME', 'PYTHONPATH')}
     result = subprocess.run(
         [sys.executable, "-c", code], capture_output=True, text=True, env=env, check=False
