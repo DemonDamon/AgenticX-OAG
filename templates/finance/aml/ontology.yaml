@@ -1,0 +1,379 @@
+namespace: finance.aml
+version: 0.1.0
+object_types:
+  - api_name: Customer
+    display_name: 客户
+    properties:
+      - api_name: id
+        display_name: ID
+        data_type: STRING
+        required: true
+        description: ''
+        enum_values: []
+      - api_name: name
+        display_name: 名称
+        data_type: STRING
+        required: true
+        description: ''
+        enum_values: []
+      - api_name: industry
+        display_name: industry
+        data_type: STRING
+        required: true
+        description: ''
+        enum_values: []
+      - api_name: riskLevel
+        display_name: 风险等级
+        data_type: STRING
+        required: true
+        description: 客户风险等级
+        enum_values:
+          - low
+          - medium
+          - high
+      - api_name: region
+        display_name: 位置
+        data_type: STRING
+        required: true
+        description: ''
+        enum_values: []
+      - api_name: estYear
+        display_name: estYear
+        data_type: DOUBLE
+        required: true
+        description: 客户成立年份
+        enum_values: []
+    primary_key:
+      - id
+    parent: ''
+    description: 反洗钱监控主体：对公或个人客户
+  - api_name: Account
+    display_name: 账户
+    properties:
+      - api_name: id
+        display_name: ID
+        data_type: STRING
+        required: true
+        description: ''
+        enum_values: []
+      - api_name: name
+        display_name: 名称
+        data_type: STRING
+        required: true
+        description: ''
+        enum_values: []
+      - api_name: accountType
+        display_name: accountType
+        data_type: STRING
+        required: true
+        description: ''
+        enum_values: []
+      - api_name: balance
+        display_name: balance
+        data_type: DOUBLE
+        required: true
+        description: ''
+        enum_values: []
+      - api_name: openDate
+        display_name: openDate
+        data_type: TIMESTAMP
+        required: true
+        description: 账户开立日期
+        enum_values: []
+    primary_key:
+      - id
+    parent: ''
+    description: 客户名下银行账户，资金往来的载体
+  - api_name: Transaction
+    display_name: 交易
+    properties:
+      - api_name: id
+        display_name: ID
+        data_type: STRING
+        required: true
+        description: ''
+        enum_values: []
+      - api_name: name
+        display_name: 名称
+        data_type: STRING
+        required: true
+        description: ''
+        enum_values: []
+      - api_name: amount
+        display_name: 金额
+        data_type: DOUBLE
+        required: true
+        description: ''
+        enum_values: []
+      - api_name: direction
+        display_name: direction
+        data_type: STRING
+        required: true
+        description: ''
+        enum_values: []
+      - api_name: counterparty
+        display_name: counterparty
+        data_type: STRING
+        required: true
+        description: ''
+        enum_values: []
+      - api_name: time
+        display_name: time
+        data_type: TIMESTAMP
+        required: true
+        description: 交易发生时间
+        enum_values: []
+    primary_key:
+      - id
+    parent: ''
+    description: 账户间交易流水
+  - api_name: SuspiciousTxn
+    display_name: 可疑交易
+    properties:
+      - api_name: id
+        display_name: ID
+        data_type: STRING
+        required: true
+        description: ''
+        enum_values: []
+      - api_name: name
+        display_name: 名称
+        data_type: STRING
+        required: true
+        description: ''
+        enum_values: []
+      - api_name: reason
+        display_name: reason
+        data_type: STRING
+        required: true
+        description: ''
+        enum_values: []
+      - api_name: status
+        display_name: 状态
+        data_type: STRING
+        required: true
+        description: ''
+        enum_values: []
+      - api_name: priority
+        display_name: 优先级
+        data_type: STRING
+        required: true
+        description: ''
+        enum_values: []
+      - api_name: detected
+        display_name: detected
+        data_type: TIMESTAMP
+        required: true
+        description: 可疑行为识别时间
+        enum_values: []
+    primary_key:
+      - id
+    parent: ''
+    description: 可疑交易报告（STR）
+  - api_name: LoanApplication
+    display_name: 贷款申请
+    properties:
+      - api_name: id
+        display_name: ID
+        data_type: STRING
+        required: true
+        description: ''
+        enum_values: []
+      - api_name: name
+        display_name: 名称
+        data_type: STRING
+        required: true
+        description: ''
+        enum_values: []
+      - api_name: amount
+        display_name: 金额
+        data_type: DOUBLE
+        required: true
+        description: ''
+        enum_values: []
+      - api_name: loanType
+        display_name: loanType
+        data_type: STRING
+        required: true
+        description: ''
+        enum_values: []
+      - api_name: status
+        display_name: 状态
+        data_type: STRING
+        required: true
+        description: ''
+        enum_values: []
+      - api_name: applyDate
+        display_name: applyDate
+        data_type: TIMESTAMP
+        required: true
+        description: 贷款申请日期
+        enum_values: []
+    primary_key:
+      - id
+    parent: ''
+    description: 贷款申请（发放待审核流程）
+  - api_name: Collateral
+    display_name: 抵押物
+    properties:
+      - api_name: id
+        display_name: ID
+        data_type: STRING
+        required: true
+        description: ''
+        enum_values: []
+      - api_name: name
+        display_name: 名称
+        data_type: STRING
+        required: true
+        description: ''
+        enum_values: []
+      - api_name: collateralType
+        display_name: collateralType
+        data_type: STRING
+        required: true
+        description: ''
+        enum_values: []
+      - api_name: appraisedValue
+        display_name: appraisedValue
+        data_type: DOUBLE
+        required: true
+        description: ''
+        enum_values: []
+      - api_name: location
+        display_name: location
+        data_type: STRING
+        required: true
+        description: ''
+        enum_values: []
+    primary_key:
+      - id
+    parent: ''
+    description: 贷款担保的抵押物/质押物
+  - api_name: SanctionHit
+    display_name: 制裁命中
+    properties:
+      - api_name: id
+        display_name: ID
+        data_type: STRING
+        required: true
+        description: ''
+        enum_values: []
+      - api_name: name
+        display_name: 名称
+        data_type: STRING
+        required: true
+        description: ''
+        enum_values: []
+      - api_name: listType
+        display_name: listType
+        data_type: STRING
+        required: true
+        description: ''
+        enum_values: []
+      - api_name: matchedEntity
+        display_name: matchedEntity
+        data_type: STRING
+        required: true
+        description: ''
+        enum_values: []
+      - api_name: hitDate
+        display_name: hitDate
+        data_type: TIMESTAMP
+        required: true
+        description: 命中制裁名单日期
+        enum_values: []
+    primary_key:
+      - id
+    parent: ''
+    description: 制裁名单命中记录
+  - api_name: DueDiligence
+    display_name: 尽调报告
+    properties:
+      - api_name: id
+        display_name: ID
+        data_type: STRING
+        required: true
+        description: ''
+        enum_values: []
+      - api_name: name
+        display_name: 名称
+        data_type: STRING
+        required: true
+        description: ''
+        enum_values: []
+      - api_name: ddLevel
+        display_name: ddLevel
+        data_type: STRING
+        required: true
+        description: ''
+        enum_values: []
+      - api_name: conclusion
+        display_name: conclusion
+        data_type: STRING
+        required: true
+        description: ''
+        enum_values: []
+      - api_name: completedDate
+        display_name: completedDate
+        data_type: TIMESTAMP
+        required: true
+        description: 尽调完成日期
+        enum_values: []
+    primary_key:
+      - id
+    parent: ''
+    description: 客户尽职调查报告
+link_types:
+  - api_name: owns
+    display_name: 持有
+    source_type: Customer
+    target_type: Account
+    cardinality: ONE_TO_MANY
+    properties: []
+  - api_name: initiates
+    display_name: 发起
+    source_type: Account
+    target_type: Transaction
+    cardinality: ONE_TO_MANY
+    properties: []
+  - api_name: flaggedAs
+    display_name: 标记为可疑
+    source_type: Transaction
+    target_type: SuspiciousTxn
+    cardinality: MANY_TO_MANY
+    properties: []
+  - api_name: applies
+    display_name: 提交
+    source_type: Customer
+    target_type: LoanApplication
+    cardinality: ONE_TO_MANY
+    properties: []
+  - api_name: securedBy
+    display_name: 以...抵押
+    source_type: LoanApplication
+    target_type: Collateral
+    cardinality: ONE_TO_MANY
+    properties: []
+  - api_name: hitsSanction
+    display_name: 命中制裁
+    source_type: Transaction
+    target_type: SanctionHit
+    cardinality: ONE_TO_MANY
+    properties: []
+  - api_name: reviewedBy
+    display_name: 被尽调
+    source_type: Customer
+    target_type: DueDiligence
+    cardinality: ONE_TO_MANY
+    properties: []
+  - api_name: risk
+    display_name: 风险关联
+    source_type: Customer
+    target_type: Customer
+    cardinality: MANY_TO_MANY
+    properties: []
+action_types: []
+metadata:
+  source_scene: bank-aml
+  source_file: prototype/scenes/bank-aml.json
