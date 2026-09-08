@@ -16,6 +16,7 @@ dependencies = [
 dev = [
     "pytest",
     "pytest-asyncio",
+    "jsonschema",
     "ruff",
     "mypy",
     "types-PyYAML",
@@ -27,6 +28,9 @@ proto = [
 graph = [
     "asyncpg",
 ]
+ingest = [
+    "numpy",
+]
 owl = [
     "rdflib>=7",
     "pyshacl>=0.26",
@@ -37,7 +41,9 @@ packages = ["agenticx_oag"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = '-m "not integration"'
+# Integration tests are additionally guarded by TEST_PG_DSN skipif so that
+# `pytest tests/graph/test_age_store.py` runs them when the env var is set;
+# the default suite deselects them via the explicit `-m "not integration"`.
 markers = [
     "integration: integration tests that require external services (docker compose)",
 ]
@@ -48,3 +54,7 @@ extend-exclude = ["agenticx_oag/contracts/gen"]
 [tool.mypy]
 files = ["agenticx_oag"]
 exclude = ["agenticx_oag/contracts/gen"]
+
+[[tool.mypy.overrides]]
+module = "asyncpg"
+ignore_missing_imports = true
