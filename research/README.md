@@ -4,9 +4,11 @@
 
 本目录是 `agenticx-oag` 的长期研究工作区。它围绕 **Palantir Ontology、Ontology-Augmented Generation（OAG）及其向 AgenticX / Near 技能转化的路径**组织资料、代码、论文、阅读笔记和已审核交付物。目录的首要原则是：**每个编号目录只有一个主研究对象，资料只选择一个主归档位置**；跨主题使用来源 ID 或链接引用，而不复制同一份结论。
 
+经公开来源复核后进入产品规划的工程任务，统一登记在 [`docs/ontology-evolution-backlog.md`](../docs/ontology-evolution-backlog.md)；本目录继续保存证据、边界和实验记录，不重复维护工程任务状态。
 
 
-> `research/` 原则上不存放未经确认可再分发的原文附件、付费资料或受限内容。用户明确要求将其提供的《本体论紫皮书》解析为 Markdown 后保存，故当前仓库保留该**文本层解析稿**，同时在文件首部明确标注来源、版权/再分发状态未核验及仅限研究引用。请勿将该解析稿视为开放许可材料或在未获得权利确认的情况下再分发。其余受限资料仍以来源登记、访问链接、可审计摘录和研究结论的方式归档。
+
+> `research/` 不存放未经确认可再分发的原文附件、付费资料、受限内容、全文转写稿或专用解析产物。受限资料只登记原则级来源类别；工程结论进入仓库前，必须由公开标准、公开实现或项目实验独立复核，且不得记录可识别资料的书名、作者、内部社群、章节页码、原文件名或本地路径。
 > 
 
 
@@ -58,7 +60,7 @@
 
 
 
-用户提供 PDF 的完整文本层解析稿位于 [`01/.../sources/ontology-whitepaper-4/ontology-whitepaper-4-extracted.md`](01-foundations-and-paradigm-boundaries/sources/ontology-whitepaper-4/ontology-whitepaper-4-extracted.md)。六方向的结构化研究底稿（包含来源、论文、代码、已核验事实与限制）位于 [`_catalog/round-1-parallel-research.json`](_catalog/round-1-parallel-research.json)。
+受限参考资料的收录边界见 [`01/.../sources/restricted-reference/README.md`](01-foundations-and-paradigm-boundaries/sources/restricted-reference/README.md)。六方向的结构化研究底稿（包含公开来源、论文、代码、已核验事实与限制）位于 [`_catalog/round-1-parallel-research.json`](_catalog/round-1-parallel-research.json)。
 
 
 
@@ -110,4 +112,4 @@
 
 
 
-首批资料包括用户提供的《本体论紫皮书》、两篇规则推理公众号文章、关于本体注入 Agent Harness 的文章线索，以及 Palantir 官方 Ontology、OAG 与 Action 文档。它们已在 [`_
+首批公开研究入口包括规则推理文章、本体注入 Agent Harness 的文章线索，以及 Palantir 官方 Ontology、OAG 与 Action 文档。受限资料不在本仓库登记可识别元数据或内容。

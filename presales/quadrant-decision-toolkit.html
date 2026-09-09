@@ -305,7 +305,7 @@ footer .wrap{display:flex;flex-direction:column;gap:4px}
   <div class="wrap">
     <div class="brand">
       <h1>本体论四象决策工具包</h1>
-      <p class="subtitle">第一次客户会议不谈产品，先用决策树四问定位需求落在哪个本体象限。内容源：《本体论紫皮书》（刘焕勇，2026-08）第 7/8 章 × docs/enterprise-landing.md v0.3 §一点五四象定位表。离线可用，打印即为客户版。</p>
+      <p class="subtitle">第一次客户会议不谈产品，先用决策树四问定位需求落在哪个本体象限。产品口径见 docs/enterprise-landing.md §一点五；技术表述基于公开标准、厂商公开资料和项目验证记录。离线可用，打印即为客户版。</p>
     </div>
     <div class="header-actions no-print">
       <button type="button" class="btn" id="themeToggle">切换深色</button>
@@ -341,7 +341,7 @@ footer .wrap{display:flex;flex-direction:column;gap:4px}
     <div id="resultMount"></div>
 
     <div class="tree-ref">
-      <p class="tree-title">决策树全文参照（紫皮书 8.1 × enterprise-landing.md 阶段一 · 第 0 步）</p>
+      <p class="tree-title">项目决策树（enterprise-landing.md 阶段一 · 第 0 步）</p>
 <pre>开始选型
 │
 Q1 需要逻辑推理吗？（隐含知识派生 / 分类推理）
@@ -365,14 +365,14 @@ Q4 需要约束 Agent 行为吗？（权限约束 / 行为审计）
   <!-- ============ 二、四象限结果页 ============ -->
   <section id="quadrants">
     <h2><span class="sec-no">二</span>四象限结果页 · 定位与打法</h2>
-    <p class="section-note">决策树任一分支的落点都在这里。每象限含：核心命题、典型技术栈（紫皮书 7.2 架构栈）、我们的角色映射（卖什么 / 不卖什么 / 走生态接口，取自 enterprise-landing.md §一点五四象定位表）、推荐 POC 类型。一句话定位：AgenticX-OAG = KG Schema（查询层）+ Palantir 式执行层 + Agent Ontology 治理层的三层组合体，Semantic Ontology 走生态接口。</p>
+    <p class="section-note">决策树任一分支的落点都在这里。每象限含：核心命题、公开技术栈、我们的角色映射（卖什么 / 不卖什么 / 走生态接口，取自 enterprise-landing.md §一点五四象定位表）、推荐 POC 类型。一句话定位：AgenticX-OAG = KG Schema（查询层）+ Palantir 式执行层 + Agent Ontology 治理层的三层组合体，Semantic Ontology 走生态接口。</p>
     <div class="quad-grid" id="quadGrid"></div>
   </section>
 
   <!-- ============ 三、16 场景表 ============ -->
   <section id="scenarios">
     <h2><span class="sec-no">三</span>16 场景匹配表</h2>
-    <p class="section-note">决策树给出方向，场景表给出参考。客户对号入座：下方 16 行照抄《紫皮书》8.2 场景匹配表，行号与原文一致，未做任何改写。</p>
+    <p class="section-note">决策树给出方向，场景表给出参考。下方 16 个场景由项目按常见业务需求独立整理；推荐结果仅用于初步分诊，仍需结合客户数据、治理和交付约束验证。</p>
 
     <div class="scenario-tools no-print">
       <div class="tabs" id="scenarioTabs" role="tablist"></div>
@@ -390,13 +390,13 @@ Q4 需要约束 Agent 行为吗？（权限约束 / 行为审计）
         <tbody id="scenarioBody"></tbody>
       </table>
     </div>
-    <p class="src-note">来源：《本体论紫皮书》8.2 场景匹配表（十六个典型场景及推荐的本体论类型）。第 16 行（智能客服 Agent）为组合场景：知识查询走 KG，行为约束走 Agent Ontology。</p>
+    <p class="src-note">项目说明：场景分类以 enterprise-landing.md 的产品边界为口径，并参考公开标准和厂商公开资料。第 16 行（智能客服 Agent）为组合场景：知识查询走 KG，行为约束走 Agent Ontology。</p>
   </section>
 
   <!-- ============ 四、组合模式 ============ -->
   <section id="combinations">
     <h2><span class="sec-no">四</span>组合使用模式</h2>
-    <p class="section-note">真实系统很少只用一种本体论。紫皮书 8.3 给出三种经过验证的组合模式——每一种都是「两层各司其职」，不是功能堆叠。</p>
+    <p class="section-note">真实系统很少只用一种本体论。项目将常见能力关系整理为三种组合模式——每一种都要求两层职责清晰，并通过 POC 验证接口和价值。</p>
 
     <div class="mode-grid">
       <div class="mode-card">
@@ -448,16 +448,16 @@ Q4 需要约束 Agent 行为吗？（权限约束 / 行为审计）
     </div>
 
     <div class="evolve-quote">
-      <p class="eq-main">「组合是演进而来的，不是设计出来的。」</p>
-      <p class="eq-sub">先用决策树选定一个核心本体论，验证价值后再逐步叠加其他层。在没有验证单一本体论价值前就搭建组合系统，会导致架构复杂度失控、团队认知负荷过重、每一层都做不好。</p>
-      <p class="eq-src">—— 紫皮书 8.4 误区四 · 也是 enterprise-landing.md 阶段二的演进原则：POC 验证过的那个象限做深，再按客户实际痛点叠加第二个象限，禁止一上来推三层全栈。</p>
+      <p class="eq-main">「先验证核心价值，再逐层扩展能力。」</p>
+      <p class="eq-sub">先用决策树选定一个核心方向，建立可测基线后再叠加其他层。这样可以控制集成面，并让每次扩展都有明确依据和回退路径。</p>
+      <p class="eq-src">—— AgenticX-OAG 项目工程建议：做深已经过 POC 验证的象限，再按客户实际瓶颈叠加第二层。</p>
     </div>
   </section>
 
   <!-- ============ 五、四大红线 ============ -->
   <section id="pitfalls">
     <h2><span class="sec-no">五</span>四大选型误区 · 售前红线</h2>
-    <p class="section-note">紫皮书 8.4 四大误区逐条呈现（正文忠实原文），每条配售前话术：遇到该诉求时如何回应。红线含义：这四类诉求出现时，宁可放慢节奏，不要顺着客户把方案做歪。</p>
+    <p class="section-note">以下四类选型风险由项目结合自身架构边界独立整理，每条配售前话术。出现这些诉求时，应先澄清边界并验证技术假设。</p>
     <div class="pit-grid" id="pitGrid"></div>
   </section>
 
@@ -466,7 +466,7 @@ Q4 需要约束 Agent 行为吗？（权限约束 / 行为审计）
 <footer>
   <div class="wrap">
     <p><b>AgenticX-OAG · P01 售前决策工具包</b>（presales/quadrant-decision-toolkit.html）</p>
-    <p>内容源：《本体论紫皮书：四种 Ontology 的技术本质、实践案例与选型决策》（刘焕勇，2026-08）第 7/8 章；docs/enterprise-landing.md v0.3 §一点五「本体论四象定位」与 §二阶段一「售前资格认证——决策树四问」。</p>
+    <p>产品口径：docs/enterprise-landing.md §一点五「本体论四象定位」与 §二阶段一「售前资格认证——决策树四问」；技术依据来自公开标准、厂商公开资料和项目验证记录。</p>
     <p>使用提示：售前内部使用时走交互流程；投屏默认浅色主题；浏览器「打印 → 存为 PDF」输出客户版（自动隐藏交互件、展开全部 16 行、单色排版）。配套话术手册见 docs/presales/four-quadrant-playbook.md。</p>
   </div>
 </footer>
@@ -475,7 +475,7 @@ Q4 需要约束 Agent 行为吗？（权限约束 / 行为审计）
 (function(){
 "use strict";
 
-/* ============ 数据层：术语与内容全部照抄紫皮书 8.1/8.2 与 enterprise-landing.md §一点五 ============ */
+/* ============ 数据层：项目独立整理，产品口径见 enterprise-landing.md §一点五 ============ */
 
 var QUADRANTS = {
   semantic: {
@@ -567,51 +567,51 @@ var QUESTIONS = [
     probes: [], yes: "agent" }
 ];
 
-/* 16 场景：照抄紫皮书 8.2（解析版 page 139），行号与原文一致 */
+/* 16 场景：项目按常见业务需求独立整理；选型结果需结合现场约束验证 */
 var SCENARIOS = [
-  { no: 1,  scene: '临床术语标准化',   need: '概念分类推理',  onto: 'Semantic Ontology', quadrant: 'semantic', reason: 'SNOMED CT本身即OWL本体，需要传递推理确定术语层级' },
-  { no: 2,  scene: '反欺诈关联分析',   need: '多跳路径发现',  onto: 'KG Schema',         quadrant: 'kg',       reason: '需发现"人-账户-设备-地址"间的隐式团伙关联' },
-  { no: 3,  scene: '航线网络优化',     need: '图拓扑分析',    onto: 'KG Schema',         quadrant: 'kg',       reason: '机场-航线构成网络，需centrality/社区发现等图算法' },
-  { no: 4,  scene: '运行控制决策',     need: '状态迁移+审批', onto: 'Palantir Ontology', quadrant: 'palantir', reason: '航班状态(计划/延误/取消)需Action驱动变更并审批' },
-  { no: 5,  scene: '维修工卡Agent',    need: '工具约束+审计', onto: 'Agent Ontology',    quadrant: 'agent',    reason: 'Agent调取工卡/录入结果需权限约束和行为审计' },
-  { no: 6,  scene: '投顾Agent',        need: '合规约束',      onto: 'Agent Ontology',    quadrant: 'agent',    reason: '投资建议需受适当性管理约束，禁止越权推荐' },
-  { no: 7,  scene: '适航审查知识管理', need: '法规推理',      onto: 'Semantic Ontology', quadrant: 'semantic', reason: '适航条款间存在引用/例外/豁免等逻辑关系，需推理' },
-  { no: 8,  scene: '供应链调度',       need: '操作闭环',      onto: 'Palantir Ontology', quadrant: 'palantir', reason: '订单/库存/物流状态需Action驱动且可回滚' },
-  { no: 9,  scene: '设备维修Agent',    need: '行为约束',      onto: 'Agent Ontology',    quadrant: 'agent',    reason: 'Agent调用诊断工具/派工需权限分级和操作审计' },
-  { no: 10, scene: '诊疗辅助Agent',    need: '安全约束',      onto: 'Agent Ontology',    quadrant: 'agent',    reason: '用药建议需药物相互作用校验和禁忌拦截' },
-  { no: 11, scene: '企业知识图谱构建', need: '实体关联查询',  onto: 'KG Schema',         quadrant: 'kg',       reason: '人/组织/项目/产品间的多跳关系查询是核心需求' },
-  { no: 12, scene: '产品配置约束校验', need: '逻辑一致性',    onto: 'Semantic Ontology', quadrant: 'semantic', reason: '配置项间存在互斥/依赖关系，需推理检测冲突' },
-  { no: 13, scene: '订单全流程管理',   need: '状态机+事务',   onto: 'Palantir Ontology', quadrant: 'palantir', reason: '订单从创建到履约需Action驱动状态流转并保证一致性' },
-  { no: 14, scene: '代码生成Agent',    need: '工具限权',      onto: 'Agent Ontology',    quadrant: 'agent',    reason: 'Agent只能调用白名单内的工具，禁止执行危险操作' },
-  { no: 15, scene: '法规合规检查',     need: '规则推理',      onto: 'Semantic Ontology', quadrant: 'semantic', reason: '法规条款间的引用/例外关系需逻辑推理判定合规性' },
-  { no: 16, scene: '智能客服Agent',    need: '行为约束+知识', onto: 'Agent Ontology + KG', quadrant: 'combo',  reason: '知识查询走KG，行为约束(退款/改签权限)走Agent Ontology' }
+  { no: 1,  scene: '跨系统产品分类对齐', need: '概念映射与蕴含', onto: 'Semantic Ontology', quadrant: 'semantic', reason: '需要用标准词汇和形式关系统一多个系统的分类口径' },
+  { no: 2,  scene: '反欺诈关联分析',   need: '多跳关系检索',   onto: 'KG Schema',         quadrant: 'kg',       reason: '需要沿客户、账户、终端和交易关系追查异常关联路径' },
+  { no: 3,  scene: '供应商风险网络',   need: '依赖路径分析',   onto: 'KG Schema',         quadrant: 'kg',       reason: '需要查询企业、股权、合同和供货关系形成的风险传播链' },
+  { no: 4,  scene: '异常订单处置',     need: '受控状态变更',   onto: 'Palantir Ontology', quadrant: 'palantir', reason: '处置动作会改变订单状态，并要求幂等、审批和补偿记录' },
+  { no: 5,  scene: '现场检修助手',     need: '工具授权与留痕', onto: 'Agent Ontology',    quadrant: 'agent',    reason: '读取工单、调用诊断和提交结果需要分级授权与完整审计' },
+  { no: 6,  scene: '客户服务退款助手', need: '金额与角色约束', onto: 'Agent Ontology',    quadrant: 'agent',    reason: '退款提案应按金额阈值、操作者角色和审批状态进行拦截' },
+  { no: 7,  scene: '数据标准一致性检查', need: '形式约束校验',  onto: 'Semantic Ontology', quadrant: 'semantic', reason: '需要检查概念层级、互斥关系和跨词表映射是否一致' },
+  { no: 8,  scene: '库存调拨闭环',     need: '事务与补偿',     onto: 'Palantir Ontology', quadrant: 'palantir', reason: '调拨涉及库存对象写回，失败时必须可追踪并执行补偿流程' },
+  { no: 9,  scene: '设备派工助手',     need: '流程与技能约束', onto: 'Agent Ontology',    quadrant: 'agent',    reason: 'Agent 必须遵循派工步骤，并且只能使用获准的业务工具' },
+  { no: 10, scene: '高风险内容发布助手', need: '审批前置',     onto: 'Agent Ontology',    quadrant: 'agent',    reason: '对外发布前需要规则校验、人工复核和可回放的决策记录' },
+  { no: 11, scene: '客户与合同关系查询', need: '实体路径查询',  onto: 'KG Schema',         quadrant: 'kg',       reason: '核心问题是跨组织、联系人、合同和项目的关联检索' },
+  { no: 12, scene: '复杂产品配置',     need: '兼容性推理',     onto: 'Semantic Ontology', quadrant: 'semantic', reason: '组件之间存在依赖、排斥和继承关系，需要一致性推理' },
+  { no: 13, scene: '采购申请执行流',   need: '状态机与审批',   onto: 'Palantir Ontology', quadrant: 'palantir', reason: '申请、审核、下单和撤销应通过类型化 Action 推进状态' },
+  { no: 14, scene: '代码维护助手',     need: '沙箱与工具白名单', onto: 'Agent Ontology',   quadrant: 'agent',    reason: '文件写入、命令执行和外部访问需要按策略授权并记录轨迹' },
+  { no: 15, scene: '政策条款一致性分析', need: '规则关系推理',  onto: 'Semantic Ontology', quadrant: 'semantic', reason: '需要表达条款的适用范围、例外和概念关系后再进行推理' },
+  { no: 16, scene: '售后服务助手',     need: '知识检索与行动治理', onto: 'Agent Ontology + KG', quadrant: 'combo', reason: '知识问答依赖关联检索，改约、退款等动作另由权限和审批约束' }
 ];
 
-/* 四大误区：正文照抄紫皮书 8.4；话术为售前物料原创 */
+/* 四类选型风险：项目结合自身架构边界独立整理 */
 var PITFALLS = [
   {
     no: "误区一", title: "用知识图谱替代一切",
-    body: "最常见的错误。团队听说「知识图谱」后，试图用它同时做概念推理、操作执行和 Agent 约束。结果：图遍历无法替代逻辑推理（缺传递性推导），图节点无法承载 Action 状态机，图属性无法定义行为约束。图谱只是四种本体论中的一种，不是万能替代品。",
-    right: "正确做法：明确核心需求是「关联查询」时才选 KG Schema，其他需求选择对应的本体论或组合使用。",
+    body: "知识图谱擅长表达和遍历实例关联，但不会自动提供形式逻辑推理、事务型 Action 状态机或 Agent 工具策略。把这些职责都压进图模型，会使能力边界和验收标准失去清晰度。",
+    right: "建议：先确认核心需求是否真的是关联查询；推理、执行和治理采用各自可验证的组件，再以清晰契约组合。",
     talk: "客户说「建一个知识图谱，把推理、执行、Agent 管控全装进去」时：先肯定方向（关联数据确实该进图谱），再用决策树拆解——术语层级推理是 Q1（Semantic），操作闭环是 Q3（执行层），Agent 权限是 Q4（治理层）。话术落点：「图谱回答的是『实体怎么连』（Q2）；您提到的另外三件事各有更对口的本体类型。我们先用四问定位最痛的那一个，POC 只主打一个象限，验证价值后再叠加。」"
   },
   {
     no: "误区二", title: "混淆概念层级与实例关联",
-    body: "将「飞机是一种航空器」（概念间的子类关系，属于 Semantic Ontology 的 TBox）和「航班 CA123 使用飞机 B-1234」（实例间的关联，属于 KG Schema 的边）混为一谈，全部塞进同一个图模型。后果：概念推理和实例查询互相干扰，图规模膨胀且无法做有效的逻辑推理。",
-    right: "正确做法：概念层用 OWL 本体管理，实例层用图数据库管理，通过物化或映射桥接。",
+    body: "概念层级与业务实例关联具有不同语义和工作负载。未经设计地放进同一模型，容易让推理边界、查询性能和数据治理相互牵制。",
+    right: "建议：明确 TBox 与实例数据的职责；需要时分别使用 OWL 与图存储，并通过受版本控制的映射或物化流程衔接。",
     talk: "客户把「飞机是一种航空器」和「航班 CA123 使用飞机 B-1234」画进同一张图时：指出这是两类东西——前者是概念间子类关系（TBox，逻辑推理的对象），后者是实例间关联（图的边，遍历查询的对象），混建会让两边都做不好。话术落点：「概念层用本体管，实例层用图数据库管，中间用物化 / 映射桥接——这正是组合模式一的标准做法，我们按这个分层帮您建。」"
   },
   {
     no: "误区三", title: "忽视世界假设的后果",
-    body: "在开放世界假设（OWA）的系统上做否定查询（「找出没有维修记录的飞机」），或在封闭世界假设（CWA）的系统上期望推理完备性。前者会遗漏数据（OWA 下「没有记录」不等于「没有维修」），后者会错误地认为「图中没有就是不存在」。",
-    right: "正确做法：在选型时明确标注系统的世界假设，查询语义要与世界假设匹配。",
+    body: "开放世界与封闭世界对未发现事实的解释不同。如果查询、推理和业务规则没有声明采用哪种假设，否定条件与完整性判断可能得出错误结论。",
+    right: "建议：在模型和接口契约中记录世界假设、数据完备性条件及否定查询语义，并用反例测试验证。",
     talk: "客户要做否定查询（「找出没有维修记录的飞机」）或期望「图中没有就是不存在」时：先问清系统的世界假设——OWA 下「没有记录」≠「没有维修」，否定查询会遗漏；CWA 下结果确定，但要求数据完备。话术落点：「我们的查询 / 执行 / 治理三层都是封闭世界（CWA），否定查询语义清晰、结果确定；如果您的场景必须开放世界推理，那是 Q1 的事——走 RDF 接口接生态推理引擎，我们不硬做。」"
   },
   {
     no: "误区四", title: "过早追求全栈组合",
-    body: "看到「全栈组合」的理想形态后，试图一步到位搭建四层架构。实际上，在没有验证单一本体论价值前就搭建组合系统，会导致架构复杂度失控、团队认知负荷过重、每一层都做不好。",
-    right: "正确做法：先用决策树选定一个核心本体论，验证价值后再逐步叠加其他层。组合是演进而来的，不是设计出来的。",
-    talk: "客户要求一步到位搭四层全栈时：引用演进原则——组合是演进而来的，不是设计出来的；未验证单一象限价值就上组合，架构复杂度失控、每一层都做不好。话术落点：「先用决策树选定一个核心象限做 POC（2~4 周），验证价值后再按实际痛点叠加第二层——紫皮书三种组合模式都是这么长出来的，我们的落地路线图也是这么设计的。」"
+    body: "在核心价值、数据质量和治理约束尚未验证前同时建设多层能力，会扩大集成面、故障面和交付风险。",
+    right: "建议：先选一个核心方向建立可测基线，再依据真实瓶颈逐层增加能力，并为每次扩展保留回退路径。",
+    talk: "客户要求一步到位搭四层全栈时：先说明多层并行建设会扩大集成面和交付风险。话术落点：「先用决策树选定一个核心象限做 POC（2~4 周），建立指标基线后再按实际瓶颈叠加第二层；每次扩展都要有依据和回退路径。」"
   }
 ];
 
@@ -626,7 +626,7 @@ function quadrantCardHTML(q){
     + '<span class="layer-badge">' + esc(q.layer) + '</span></div>'
     + '<p class="quad-core"><b>核心命题：</b>' + esc(q.core) + '</p>'
     + '<p class="quad-world">' + esc(q.world) + '</p>'
-    + '<div class="quad-sec"><p class="quad-sec-title">典型技术栈（紫皮书 7.2 架构栈）</p><ul>'
+    + '<div class="quad-sec"><p class="quad-sec-title">典型技术栈（公开生态）</p><ul>'
     + q.stack.map(function(s){ return '<li>' + esc(s) + '</li>'; }).join('')
     + '</ul></div>'
     + '<div class="quad-sec"><p class="quad-sec-title">我们的角色映射（enterprise-landing.md §一点五）</p>'
@@ -707,7 +707,7 @@ function answer(yes){
     state.step += 1;
     if (state.step >= QUESTIONS.length) { // 四问全否 → 默认治理层兜底
       state.finished = true;
-      renderResult("agent", "Q1~Q4 全部答「否」→ 按紫皮书决策树默认兜底：");
+      renderResult("agent", "Q1~Q4 全部答「否」→ 当前工具给出的初步兜底建议：");
     } else {
       renderQuestion();
     }

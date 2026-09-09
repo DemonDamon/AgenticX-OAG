@@ -14,7 +14,7 @@ isProject: false
 
 **Goal:** 让「本体」成为一等 Python 对象：YAML 定义 → 校验 → 内存模型 → OWL 导出/SHACL 校验，并能把现有 `prototype/scenes/*.json` 的类型定义迁移为正式本体 YAML。P04/P05/P08/P10/P11 全部消费本模块。
 
-**Architecture:** Pydantic 模型与 P02 proto 字段一一镜像（proto 是跨语言契约，Pydantic 是 Python 侧人体工学层）；OWL 导出**仅 TBox（概念层）**，实例层归图存储——这是紫皮书 8.4 误区二的落地（概念层级与实例关联分模型管理）。
+**Architecture:** Pydantic 模型与 P02 proto 字段一一镜像（proto 是跨语言契约，Pydantic 是 Python 侧人体工学层）；OWL 导出**仅 TBox（概念层）**，实例层归图存储，以保持概念层级与实例关联分模型管理。
 
 **Tech Stack:** pydantic v2 / pyyaml / rdflib / pyshacl（`[owl]` extra 引入 rdflib+pyshacl）
 
