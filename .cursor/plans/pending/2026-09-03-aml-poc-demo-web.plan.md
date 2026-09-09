@@ -28,6 +28,16 @@ isProject: false
 - P06 plan 已声明：QA 数据集「P10 未完成前先用 `prototype/scenes/bank-aml.json` 的 20 节点出题」——即本 plan 需交付扩展版 AML 种子数据（图数据 + 文档），供 P06 出题与 Demo 共用。
 - P04 plan FR-7 的 `examples/kg_build_demo.py` 已建立「3 篇 AML 示例文档 → AGE」的管道；本 plan 扩充数据并做 Web 化。P05 plan 的 `build_pack(question)` / Generator / `CitationValidator` 是问答链路的引擎侧实现。
 
+### 本体工程演进约束
+
+依据 `docs/architecture.md` 的 Industry Pack 分层和 P06 评测契约，P10 必须把 AML Demo 交付为可复用场景包，而不是只在页面中写死演示逻辑：
+
+- 场景包固定包含 `ontology/actions/policy/harness/seed/golden-set` 六类资产；Web API 和页面只消费这些资产，禁止重复定义对象、规则或 Action 语义。既有文件命名可保持，必须在 `templates/finance/aml/README.md` 建立清单及版本对应关系。
+- Golden Set 除问答与 citation 外，增加处置轨迹：风险识别、规则命中、提案、权限判断、审批、执行/失败/补偿、审计结果；至少包含正常、拒绝、失败回滚三条确定性剧本。
+- 页面明确区分“原始事实、规则推导、模型主张、执行结果”，每项均可展开查看来源等级、证据 ID、规则/本体版本；禁止用一段自然语言混合展示而造成事实边界不清。
+- `OAG_DEMO_GOVERNANCE=0` 保持现有 POC 主线；打开治理增强后，P07/P08/P09 任一不可用都应逐项标注降级，不得伪造审批或审计成功。
+- 增补验收：场景包清单可机器校验、三条 Golden 处置剧本可重复执行、治理开关两态均通过、页面展示的 Action/规则/证据 ID 能在后端记录中反查。
+
 ## 需求定义
 
 ### FR（Functional Requirements）
@@ -39,8 +49,8 @@ isProject: false
 - **FR-5 对象端点**：`GET /api/objects/{object_type}?q={keyword}&limit=50` → 对象列表（P04 `get_objects` + 关键词前端过滤可）；`GET /api/objects/{object_type}/{object_id}` → 详情 + 2 跳邻居摘要。
 - **FR-6 报告端点**：`GET /api/report` → 读 P06 最新报告产物（`eval/reports/` 下最新 `*.html`，`text/html` 直出；无报告时 404 + 提示先生成）。
 - **FR-7 治理端点（可选增强）**：`OAG_DEMO_GOVERNANCE=1` 时启用：`POST /api/action/propose`（接收 Proposal JSON → P08 `HarnessEngine.evaluate` → BLOCK 则 403 返回 Verdict；ALLOW 则经 P07 gRPC `Propose` 返回 ActionRecord）、`GET /api/action/{action_id}`（P07 GetStatus 透传）、`GET /api/perm/check`（P09 PolicyEngine 直评）。开关关闭时上述端点统一 501 `{detail: "治理能力未启用：OAG_DEMO_GOVERNANCE=1 开启"}`。
-- **FR-8 种子数据与脚本**：`apps/demo/backend/scripts/seed.py`——① 调 P04 摄入管道处理 `apps/demo/data/docs/*.md`（≥8 篇虚构 AML 调查报告，含客户背景、可疑交易叙事、团伙线索；每篇 ≥3 个可抽取实体）；② 直接注入 `apps/demo/data/seed_objects.json`（≥30 实例：8 Customer、12 Transaction、6 Account、4 Company，含一个 5 节点可疑团伙：C-001 通过 A-001→T-101→A-002→T-205→A-003→C-007 的 3 跳链路）；③ 幂等（按 namespace 重建 AGE graph）。`--wipe` 参数清空重建。
-- **FR-9 演示剧本**：`docs/demo-script.md`——5 个标准演示问题与预期效果：Q1 单跳事实（「C-001 的风险等级？」）、Q2 多跳团伙（「T-101 的资金最终流向了哪个客户？」，需 ≥3 跳）、Q3 统计（「高风险客户有几个？」）、Q4 溯源验证（「这个结论的依据是什么？」→ 展示 EvidenceDrawer）、Q5 治理演示（冻结提案 → Harness 拦截 VIP 案例，仅治理模式）。mock 模式固定应答文案覆盖 Q1-Q4。
+- **FR-8 AML 场景包与种子脚本**：`templates/finance/aml/README.md` 登记 `ontology.yaml / actions.yaml / policy.yaml / harness.yaml / seed manifest / golden-set manifest` 的路径、版本和兼容矩阵；`apps/demo/data/scenario-manifest.yaml` 机器校验六类资产均存在且版本可配对。`apps/demo/backend/scripts/seed.py` 处理 `apps/demo/data/docs/*.md`（≥8 篇虚构报告）并注入 `apps/demo/data/seed_objects.json`（≥30 实例，含一个可疑团伙），按 namespace 幂等重建 AGE graph，`--wipe` 清空重建。
+- **FR-9 演示与 Golden 处置剧本**：`docs/demo-script.md` 保留 Q1 单跳事实、Q2 多跳团伙、Q3 统计、Q4 溯源验证、Q5 治理演示。另在 `apps/demo/data/golden/action-trajectories.json` 固化正常执行、规则拒绝、失败补偿三条轨迹，每条包含 evidence/claim/rule/proposal/authorization/approval/action/outcome 的预期 ID 与状态；mock 模式固定应答覆盖 Q1-Q4，治理模式可按轨迹重放 Q5。
 - **FR-10 前端三栏应用**：`apps/demo/frontend/`——
   - 布局：左栏 `ChatPanel`（提问输入 + 历史问题列表）；中栏 `AnswerCard`（答案文本，引用脚标 `[E1]` 内联可点）；右栏 Tab 切换 `GraphCanvas` / `EvidenceDrawer` / `ReportViewer`。
   - `CitationChip`：点击引用脚标 → EvidenceDrawer 定位到对应证据（高亮），GraphCanvas 同步高亮该证据的 object_id 节点。
@@ -147,7 +157,7 @@ class GovernanceKit:
 | FR-5 | `GET /api/objects/Customer` 返回 8 条；`GET /api/objects/Customer/C-001` 详情含邻居摘要 ≥2 | `test_api.py::test_objects` |
 | FR-6 | `eval/reports/` 有产物时 200 text/html；无产物时 404 且 detail 含「先生成」提示 | `test_api.py::test_report` |
 | FR-7 | 默认（开关关）propose 返回 501；开关开 + mock Harness（BLOCK）返回 403 + violations；mock ALLOW + mock gRPC stub 返回 ActionRecord | `test_api.py::test_governance_*`（3 用例） |
-| FR-8 | `python apps/demo/backend/scripts/seed.py` 幂等（跑两次数据量不变）；`--wipe` 后重建成功；docs ≥8 篇且 P04 抽取实体 ≥10 入图（integration） | 本地命令 |
-| FR-9 | demo-script.md 含 5 问及预期输出示例；Q1-Q4 在 mock 模式全部可复现 | 人工走查 + 演示记录 |
+| FR-8 | scenario manifest 六类资产齐全、引用文件存在且版本兼容；seed 跑两次数据量不变，`--wipe` 后重建成功；docs ≥8 篇且 P04 抽取实体 ≥10 入图 | manifest 单测 + integration |
+| FR-9 | demo-script.md 含 5 问；Q1-Q4 在 mock 模式可复现；三条 action trajectory 重放后的 ID、状态、拒绝原因或补偿结果与 golden 文件一致 | 自动轨迹测试 + 人工走查 |
 | FR-10 | `pnpm build` 通过；界面：中栏答案内 `[E1]` 可点 → 右栏 EvidenceDrawer 高亮对应证据且 GraphCanvas 高亮其 object_id 节点；图节点点击可展开；顶栏徽标显示 mock/real | 人工走查（截图存 `docs/demo-script.md` 附录） |
 | FR-11 | `make demo` 与 `make demo-frontend` 两条命令按 README 快速开始可完整走通 demo-script Q1-Q4 | 本地命令 |

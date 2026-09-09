@@ -28,19 +28,29 @@ isProject: false
 - P02 plan Out of scope 已声明：「不做 proto 的 TS 生成（P11 需要时再加）」——本 plan 是该决策的执行方。
 - P02 plan：「P03/P04/P05/P07/P08/P09/P11 均可并行开工」——本 plan 对 P03 的依赖是**软依赖**：TS 包骨架、proto-ts、Explorer 的 schema 图可先行；本体加载与对象数据端点联调需 P03/P04 交付。DAG 注册表已如实标注（见 enterprise-landing.md §8）。
 
+### 本体工程演进约束
+
+依据项目 Phase 5 路线、版本化本体契约和 Industry Pack 分层，为 P11 增加以下实施约束：
+
+- Object View 由版本化 Ontology 元数据生成；每个字段保留 `objectType/propertyType/ontologyVersion` 绑定，关系展示保留 LinkType 与方向，不能退化为与语义模型脱钩的普通 CRUD 表单。
+- Action 按钮必须绑定已发布的 `ActionType`，由 Action schema 生成参数表单并展示前置条件、审批策略和可能状态变化；提交后显示真实 ActionRecord，网关缺席时只允许明确的只读/模拟降级。
+- 权限继承同时覆盖页面、Block、字段和 Action：治理服务可用时先按 P09 的真实判定做服务端过滤/拒绝，再做前端隐藏或禁用；ObjectForm 的 `write` 不得替代 Action 的 `approve` 权。治理服务不可用是运行时故障状态，不能伪装成“无 grant 命中”的权限判定。
+- App JSON 引用 `templateId/templateVersion/ontologyVersion`，支持从通用行业模板实例化后保留本地 override；模板升级只能生成差异预览，不得静默覆盖业务配置。
+- 增补快照与集成验收：本体版本变化导致 ViewSchema 可解释 diff；无 read 权字段不进入 API 响应；Action 绑定与审批权限独立；模板 round-trip 不丢语义绑定；治理/Action 缺席时降级提示准确且无写副作用。
+
 ## 需求定义
 
 ### FR（Functional Requirements）
 
 - **FR-1 engine-api 服务**：`apps/engine-api/app/main.py`（FastAPI）——`GET /ontology`（YAML 解析为 JSON：object_types/link_types/action_types）、`GET /objects/{object_type}?q=&limit=&offset=`、`GET /objects/{object_type}/{object_id}`（含 2 跳邻居摘要）、`GET /graph/schema`、`GET /graph?object_id=&hops=`（全部桥接 P03/P04 引擎包，装配模式参照 P10 `deps.py`）；`GET /health`。鉴权：静态 Bearer token（`OAG_ENGINE_API_TOKEN`），未带 token 401。
 - **FR-2 proto-ts 生成**：根 Makefile 增 `proto-ts` 目标——`protoc --plugin=protoc-gen-ts --ts_out=workshop/shared/gen -I proto proto/agenticx_oag/ontology/v1/ontology.proto`；生成 `workshop/shared/gen/ontology/v1/ontology.ts`（含 ObjectType/LinkType/ActionType/Ontology 接口）；幂等（二次执行 diff 为空）。生成产物提交入库。
-- **FR-3 Object View 生成器**：`workshop/server/src/objectview/generate.ts`——输入 `ObjectType`（proto-ts 类型）+ `LinkType[]`，输出 `ViewSchema`（契约见「关键实现意图」）。生成规则（确定性，逐条照写）：① `listView.columns` = primary_key 属性在前 + 其余前 5 个非描述属性；`primaryField` = primary_key[0]；② 枚举属性（`enum_values` 非空）→ `listView.filters` 一项（op: eq, options: enum_values）且 `formView` 用 `select` widget；③ `detailView.relations` = 以该类型为 source 或 target 的全部 link_types（标注方向）；④ `required: true` 属性 → formView 必填；⑤ `data_type` → widget 映射：STRING→input、DOUBLE/INT64→number、BOOL→switch、TIMESTAMP→datepicker、JSON→textarea。提供 `workshop/server/src/objectview/generate.test.ts` 快照测试（bank-aml Customer 的 ViewSchema 与 plan 给出的期望一致）。
+- **FR-3 Object View 生成器**：`workshop/server/src/objectview/generate.ts`——输入 `ObjectType + LinkType[] + ontologyVersion`，输出 `ViewSchema`（契约见「关键实现意图」）。每个字段保留 `propertyType` 与 `ontologyVersion`，每条 relation 保留 LinkType 与方向；其余确定性生成规则不变。提供 `generate.test.ts` 快照与版本差异测试（bank-aml Customer 快照一致；本体版本变化产生可解释 diff）。
 - **FR-4 tRPC BFF**：`workshop/server/src/trpc/`——routers：`ontologyRouter`（`list: /ontology`、`getViewSchema(objectType)`：调 FR-3 生成器并缓存）、`objectsRouter`（list/get/search 代理 engine-api）、`graphRouter`（schema/instance 代理）、`appRouter`（`saveApp / listApps / getApp`：app JSON 存 drizzle SQLite `apps` 表——复用原型 drizzle 栈）。engine-api 地址经环境变量 `ENGINE_API_URL` 注入（默认 `http://localhost:7581`）。
 - **FR-5 组件库**：`workshop/src/components/blocks/`——`ObjectTable`（列/筛选按 ViewSchema 渲染，行点击进详情）、`ObjectDetail`（属性分区 + relations 列表，关联对象可点击跳转）、`ObjectForm`（按 formView 渲染，提交仅本地状态——写回留 P07 集成，本 MVP 表单提交弹「已记录（写回需接 Action Gateway）」提示）、`StatCard`（对某 object_type 的 count 或某枚举值计数）、`SectionCard`（静态文本容器）。全部组件 props 声明 `bind: {objectType, viewRef}`，数据从 tRPC 拉。
-- **FR-6 App Builder（搭建器）**：`workshop/src/builder/`——三区布局：左「组件面板」（blocks 列表 + 本体对象类型列表，拖入画布即生成该类型的 ObjectTable/Detail/Form 实例）；中「画布」（垂直堆叠布局，块可上下移/删除/属性微调——属性面板仅标题与数据条数限制）；右「属性面板」。输出 app JSON（契约见「关键实现意图」）保存到 `appRouter.saveApp`。**不做自由网格拖拽**（垂直堆叠 + 顺序调整即满足「监控看板」验收，复杂布局后续）。
+- **FR-6 App Builder（搭建器）**：`workshop/src/builder/`——保持左组件面板、中垂直画布、右属性面板三区布局。输出 app JSON 保存到 `appRouter.saveApp`，根节点必须包含 `templateId/templateVersion/ontologyVersion`；从模板实例化时把业务改动存为 override，升级只生成 diff preview。**不做自由网格拖拽**。
 - **FR-7 渲染运行时**：`workshop/src/runtime/AppRenderer.tsx`——输入 app JSON，按 pages/blocks 递归渲染组件树；顶部 tab 切换 pages。运行时入口路由 `#/app/{appId}` 与搭建器 `#/builder/{appId}` 共用一套 blocks 组件。
 - **FR-8 Explorer**：`workshop/src/explorer/`——① Schema 图谱：`GET /graph/schema` → d3-force SVG，ObjectType 为节点、LinkType 为边（类型着色图例），点击节点显示属性表；② 实例浏览：选 ObjectType → ObjectTable → 行点击展开 2 跳邻居子图（复用 GraphCanvas 思路）；③ 全局搜索框：`objectsRouter.search`（跨类型关键词，engine-api `/objects?q=` 按类型并发查询合并）。
-- **FR-9 权限标注**：app JSON 每个 block 附 `requires: {objectType, permission}`（生成器自动填 `read`；ObjectForm 自动填 `write`）；运行时渲染前经 `permRouter.check`（engine-api `/perm` 代理 P09，P09 未接入时 engine-api 返回 `{available: false}` → 前端全量渲染 + 顶栏黄条提示「治理未接入」）。
+- **FR-9 权限标注与三态运行策略**：app JSON 每个 block 附 `requires: {objectType, permission}`（生成器自动填 `read`；ObjectForm 自动填 `write`），运行时经 `permRouter.check`（engine-api `/perm` 代理 P09）区分三态：① **治理服务可用**：按 P09 返回的真实 allow/deny 渲染；② **治理服务不可用 + 生产模式**：write/approve、Action 和表单提交一律禁用，read 必须由部署时显式配置 `OAG_WORKSHOP_GOVERNANCE_OUTAGE_READ_POLICY=deny|allow_readonly` 决定，禁止代码隐式默认，未配置时健康检查返回 configuration error 且不进入 ready；③ **显式只读演示模式**（`OAG_WORKSHOP_DEMO_READONLY=1`）：允许 read Block 展示，禁用全部写操作、Action 和审批，并显示「治理未接入·只读演示」。状态②的读取策略是待 Maintainer 确认的工程建议，不是 P09“无 grant 命中则 deny”的外推。
 - **FR-10 Action 集成（可选）**：ObjectDetail 的 relations 区与 ObjectForm 提交按钮支持配置「绑定 ActionType」；配置后点击 → `actionRouter.propose`（engine-api `/action` 代理 P07，P07 未启用时同样走 `available: false` 降级提示）。
 - **FR-11 30 分钟走查文档**：`docs/workshop-walkthrough.md`——以「可疑交易监控看板」为样例的搭建步骤手册（创建 App → 拖入 Transaction ObjectTable（riskLevel=high 筛选）→ 拖入 StatCard（可疑交易数）→ 拖入 Customer ObjectDetail → 保存 → 运行时查看），含每步截图位。这是 Phase 5 验收的复现脚本。
 
@@ -62,6 +72,7 @@ isProject: false
 | drizzle | `workshop/server/src/db/schema.ts` 增 `apps` 表（id/title/json/updated_at）（骨架拷贝后修改） |
 | 组件库 | `workshop/src/components/blocks/{ObjectTable,ObjectDetail,ObjectForm,StatCard,SectionCard}.tsx`（新建） |
 | 搭建器 | `workshop/src/builder/{BuilderPage,ComponentPalette,Canvas,PropertyPanel}.tsx`（新建） |
+| 模板实例化/差异 | `workshop/server/src/templates/{instantiate,diff}.ts` + 对应测试（新建） |
 | 运行时 | `workshop/src/runtime/AppRenderer.tsx`（新建） |
 | Explorer | `workshop/src/explorer/{ExplorerPage,SchemaGraph,InstanceGraph,GlobalSearch}.tsx`（新建） |
 | 走查文档 | `docs/workshop-walkthrough.md`（新建） |
@@ -75,6 +86,8 @@ isProject: false
 ```typescript
 interface ViewSchema {
   objectType: string;
+  ontologyVersion: string;
+  fieldBindings: Record<string, { propertyType: string; ontologyVersion: string }>;
   listView: {
     columns: string[];              // primary_key 在前
     filters: { field: string; op: "eq"; options: string[] }[];
@@ -97,6 +110,11 @@ interface ViewSchema {
 ```json
 {
   "objectType": "Customer",
+  "ontologyVersion": "1.0.0",
+  "fieldBindings": {
+    "customerId": {"propertyType": "STRING", "ontologyVersion": "1.0.0"},
+    "riskLevel": {"propertyType": "STRING", "ontologyVersion": "1.0.0"}
+  },
   "listView": {
     "columns": ["customerId", "name", "riskLevel", "region", "accountTier"],
     "filters": [{ "field": "riskLevel", "op": "eq", "options": ["high", "medium", "low"] }],
@@ -125,6 +143,9 @@ interface ViewSchema {
   "version": 1,
   "id": "app-suspect-dashboard",
   "title": "可疑交易监控看板",
+  "templateId": "finance.aml.suspect-dashboard",
+  "templateVersion": "1.0.0",
+  "ontologyVersion": "1.0.0",
   "pages": [
     {
       "id": "page-main",
@@ -161,7 +182,19 @@ ontologyRouter.getViewSchema.input(z.object({ objectType: z.string() })).query(a
 })
 ```
 
-**降级链（治理/Action 缺席时的行为，统一模式）**：engine-api `/perm` 与 `/action` 探测失败或返回 `{available: false}` → BFF 包装为 `{ available: false }` → 前端对应 UI：权限黄条提示 / 表单提交改弹「写回需接 Action Gateway」toast。**禁止**在缺席时抛错白屏。
+**降级链（治理/Action 缺席时）**：engine-api `/perm` 探测失败或返回 `{available: false}` → BFF 保留“服务不可用”状态，不能转换成 P09 的 deny。生产模式下始终禁止 write/approve、Action 和表单提交；read 按显式 `OAG_WORKSHOP_GOVERNANCE_OUTAGE_READ_POLICY` 执行，`deny` 显示不可用占位，`allow_readonly` 仅渲染 read Block 并显示「治理暂不可用·只读策略生效」。显式只读演示模式允许 read Block 并显示「治理未接入·只读演示」。`/action` 不可用时所有 Action 控件禁用，触发后提示「写回需接 Action Gateway」，且不更新本地业务状态。**禁止**把服务故障记录为授权 deny、在任何故障态放行写操作、抛错白屏或伪造写入成功。
+
+### 来源分级与待确认项
+
+来源等级定义见 `docs/ontology-evolution-backlog.md`：
+
+| P11 决策 | 来源等级 | 状态 |
+|---|---|---|
+| 治理服务可用时按真实权限返回 | S1 | 项目既有设计 |
+| 无 grant 命中时 deny | S1/S2/S3 | P09 权限引擎规则；P11 只消费结果 |
+| 生产故障态始终禁止 write/approve/Action | S4 | 新增工程建议，待 Maintainer 确认 |
+| 生产故障态读取采用显式 `deny|allow_readonly` 策略且不设隐式默认 | S4 | 新增工程建议，待 Maintainer 确认 |
+| 显式只读演示模式允许读取并展示告警 | S1/S4 | 继承原有演示降级方向，收紧为只读，待确认最终文案 |
 
 ## In scope / Out of scope
 
@@ -175,12 +208,12 @@ ontologyRouter.getViewSchema.input(z.object({ objectType: z.string() })).query(a
 |---|---|---|
 | FR-1 | 无 token 401；带 token `GET /ontology` 返回 ≥8 object_types；`/objects/Customer`、`/graph/schema`、`/graph?object_id=C-001` 正常（AGE 已 seed，可复用 P10 种子脚本） | `apps/engine-api/tests/test_api.py` |
 | FR-2 | `make proto-ts` 两次执行 `git diff` 为空；`ontology.ts` 导出 `ObjectType` 接口且被 generate.ts 引用编译通过 | 本地命令 + `pnpm build` |
-| FR-3 | Customer ViewSchema 与「关键实现意图」快照一致（字段名按实际本体校正后固化快照）；Transaction 的 relations 含 conducted/transfersTo 双向 | `generate.test.ts` 快照 |
+| FR-3 | Customer ViewSchema 与快照一致且含 ontologyVersion/fieldBindings；Transaction relations 含 conducted/transfersTo 双向；本体版本变化产生字段级 diff | `generate.test.ts` 快照 + diff 用例 |
 | FR-4 | BFF 四 router 的 tRPC 集成测试：mock fetch engine-api 返回固定 JSON，断言 getViewSchema/list/saveApp→getApp round-trip | `workshop/server/src/**/*.test.ts` |
 | FR-5 | 各 block 组件在 Storybook 或测试页可独立渲染（ObjectTable 渲染 8 行 Customer 数据；ObjectForm select 选项来自 ViewSchema） | 组件测试（vitest + testing-library） |
-| FR-6 | 搭建器：拖入 3 个块 → 保存 → `apps` 表有记录且 app JSON 结构符合契约（version: 1） | Playwright 或人工走查记录 |
+| FR-6 | 搭建器保存的 app JSON 含 template/ontology 版本；模板实例化 round-trip 不丢 override；模板升级只返回 diff preview 且不改原 app | 单元测试 + Playwright 或人工走查记录 |
 | FR-7 | `#/app/{id}` 渲染保存的应用：StatCard 显示数值、ObjectTable 按 filter 过滤、page tab 切换正常 | 人工走查（workthrough 复现） |
 | FR-8 | Explorer：schema 图显示 8 类型 + 8 关系（图例着色）；实例浏览从 Customer 展开含 Account/Transaction 邻居；全局搜索 "C-001" 跨类型返回 Customer 结果 | 人工走查 |
-| FR-9 | P09 未接入：顶栏黄条「治理未接入」且页面全量渲染；接入后（mock `/perm` 返回 deny）对应 block 显示无权限占位 | 组件测试（mock 两态） |
-| FR-10 | P07 未启用：表单提交弹 toast；启用后（mock propose）显示 ActionRecord 状态 | 组件测试（mock 两态） |
+| FR-9 | 覆盖三态：①治理可用时分别 mock allow/deny，结果与 P09 一致；②生产故障态始终禁用 write/approve/Action，read 分别验证显式 `deny` 与 `allow_readonly`，缺少配置时 health not-ready；③显式只读演示仅展示 read Block 和「治理未接入」告警。另断言服务不可用不会被记录成授权 deny | 组件测试 + engine-api/BFF 集成测试 |
+| FR-10 | P07 未启用：表单/Action 禁用，触发时弹 toast 且无本地业务写入；启用后（mock propose）显示真实 ActionRecord 状态 | 组件测试（mock 两态） |
 | FR-11 | 按 `docs/workshop-walkthrough.md` 完整搭建「可疑交易监控看板」≤30 分钟（含列表+详情+表单+统计），保存重开渲染一致 | 人工走查计时记录（截图入文档） |

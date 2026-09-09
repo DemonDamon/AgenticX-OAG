@@ -335,4 +335,27 @@
 
 ---
 
+## 七、本体工程演进工作集（2026-09）
+
+P02-P06 已完成，引擎已具备本体模型、KG 构建、OAG 检索、Context Pack、引用约束生成和离线评测基础。当前工作集转向 P07-P11，统一入口见 [`ontology-evolution-backlog.md`](ontology-evolution-backlog.md)。
+
+| 优先级 | 当前计划 | 本轮反哺重点 | 状态 |
+|---|---|---|---|
+| 1 | P07 Action Gateway | Action 契约、状态变化、幂等、副作用、补偿和解释 | pending |
+| 1 | P08 Agent Harness | 概念/规则/流程/技能四层边界、冲突检测和确定性解释 | pending |
+| 1 | P09 治理与审计 | 四权矩阵、来源等级、端到端决策链、PROV-O 回放 | pending |
+| 2 | P10 AML POC | 六类场景资产、Golden 处置轨迹、治理增强演示 | pending |
+| 2 | P11 Workshop | Object View、Action 绑定、权限继承、行业模板复用 | pending |
+
+这些任务继续沿用现有 subplan，不新建重复 P12；状态以 `docs/enterprise-landing.md` §8.2 注册表为唯一事实。P07-P09 完成最小治理闭环后，再把增强能力接入 P10/P11，且不得阻塞 P10 的基础 POC 路径。
+
+后续 backlog 在 P10/P11 验证后再拆 P12+：
+
+1. 方法记忆与 Analysis Template：从成功分析轨迹中沉淀可复用方法，只复用方法、不复用旧结论。
+2. 真实 Provider 与生产可复现环境：替换 mock，记录模型、检索、规则和本体版本。
+3. Context Pack 持久化与检索路径溯源：支持缓存、重放、版本迁移和证据反查。
+4. 数据质量增强：数据卡、来源等级、冲突报告、增量同步及入库门禁。
+
+---
+
 *本文档为活文档，随项目进展持续更新。*

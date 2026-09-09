@@ -12,7 +12,7 @@ isProject: false
 > Planned-with: glm 5.3
 > Suggested-Impl-Model: 代码专精中档偏强（DSL 语义必须一次定准无歧义；条件求值器需完备单测；校验顺序与短路语义是正确性关键）
 
-**Goal:** 落地治理双维度中的**语义约束维度**（`docs/enterprise-landing.md` §3.1，源自紫皮书 6.1）：Agent/LLM 生成的「提案」（Proposal）在执行前必须依次通过概念层 → 规则层 → 流程层 → 技能层四道校验，任何一层 BLOCK 即拦截，实现「先校验后执行」。这是对 Semantica 的核心代差——治理的是 LLM 的生成过程，不是确定性代码。
+**Goal:** 落地项目既有治理双维度中的**语义约束维度**（`docs/enterprise-landing.md` §3.1）：Agent/LLM 生成的「提案」（Proposal）在执行前必须依次通过概念层 → 规则层 → 流程层 → 技能层四道校验，任何一层 BLOCK 即拦截，实现「先校验后执行」。这是项目相对纯检索方案的核心差异——治理的是 LLM 的生成过程，不是确定性代码。
 
 **Architecture:** 纯 Python 库（控制面），无 IO 依赖：输入是结构化 `Proposal`（pydantic）+ 规则集（YAML DSL），输出是 `Verdict`（ALLOW/BLOCK + 命中违规明细）。四层校验器各自独立成模块，`HarnessEngine` 按固定顺序编排并短路。规则 ID 与 P03 `ActionType.preconditions` 对齐（P03 做格式校验，本 plan 提供规则本体与交叉校验工具）。校验通过的 Proposal 由调用方（P10 Demo / 未来 Agent Runtime）提交给 P07 Action Gateway 执行——本 plan 不调用 P07，两者通过 Proposal JSON schema 契约解耦、可并行开发。
 
@@ -23,18 +23,33 @@ isProject: false
 ## 背景与动机（证据链）
 
 - `docs/enterprise-landing.md` §3.1 治理双维度：Agent Harness 四层（语义约束维度）——概念层（认知边界：Agent 能讨论什么）/ 规则层（MUST·MUST_NOT·MAY 行为准则）/ 流程层（SOP 步骤不可跳过不可乱序）/ 技能层（工具白名单 + 输入输出契约 + 超时重试）。LLM 提案先过四层校验，任何一层 BLOCK 即拦截。
-- `docs/enterprise-landing.md`：紫皮书对「Palantir 治理执行（管确定性代码）vs Agent Ontology 治理生成（管概率性 LLM）」的精确切分，是本 plan 的存在理由。
+- `docs/enterprise-landing.md`：项目将确定性 Action 执行治理与概率性 LLM 提案治理分层，是本 plan 的设计依据。
 - `docs/roadmap.md` Phase 3 交付物 5「规则引擎集成」：确定性规则与本体绑定（某类对象必须满足某条件才能执行某 Action），轻量 forward chaining 优先。
 - P02 plan 已锁定：proto 中 `ActionType.preconditions` 是规则 ID 列表（P08 Harness 规则）；P03 plan 的 FR-3 声明 preconditions「允许前向引用 P08 规则 ID，仅做格式校验」——即本 plan 是这些 ID 的定义方。
-- 紫皮书案例（维修工卡 Agent / 用药禁忌拦截）验证「先校验后执行」是 Agent Ontology 象限的落地形态；bank-aml 场景的 VIP 冻结人工复核、大额两级审批是首批规则集素材。
+- 维修工卡、用药禁忌等公开可复核场景说明「先校验后执行」适合作为 Agent 治理层的落地形态；bank-aml 场景的 VIP 冻结人工复核、大额两级审批是首批规则集素材，具体规则仍须由业务与合规负责人确认。
+
+### 本体工程演进约束
+
+依据 `docs/enterprise-landing.md` §3.1 的既有四层模型和 JSON Schema 等公开契约方法，P08 实施时必须保持四层职责正交：
+
+| 层 | 负责回答 | 明确不负责 | 必留审计信息 |
+|---|---|---|---|
+| 概念层 | Agent 可以认识、讨论哪些对象与意图 | 不判断具体业务条件 | ontology/rule-set 版本、越界对象或意图 |
+| 规则层 | 当前提案满足哪些 MUST/MUST_NOT/MAY | 不编排 SOP 顺序 | 命中规则 ID、条件取值、解释模板 |
+| 流程层 | 当前步骤及前驱是否完整 | 不授权工具与数据 | SOP ID/版本、已完成与缺失步骤 |
+| 技能层 | 可调用哪些工具，输入输出是否合约 | 不替工具执行副作用 | skill/tool ID、schema 版本、校验结果 |
+
+- `Verdict` 增补 `rule_set_version`、逐层 `checks` 与稳定 `reason_code`；相同规则版本和 Proposal 必须生成可比较的确定性解释，供 P09 回放。
+- 规则 DSL 为 `rules[]` 增加可选 `depends_on: list[rule_id]`，形成依赖与冲突检测的最小闭环：加载时拒绝重复 ID、悬空引用与显式循环；同一 Proposal 上相互矛盾的 MUST/MUST_NOT 结论按“拒绝优先”处理并输出冲突明细。复杂规则平台、灰度发布 UI 仍保持 Out of scope。
+- 规则集变更必须有 Golden Proposal 回归集，至少覆盖每层 ALLOW/BLOCK、规则冲突、规则版本切换和解释稳定性；不能仅验证最终 `decision`，还要断言命中路径与原因。
 
 ## 需求定义
 
 ### FR（Functional Requirements）
 
 - **FR-1 Proposal 模型**：`agenticx_oag/harness/model.py` 定义 `Proposal`（pydantic，字段见「关键实现意图」）。Proposal 是四层校验的唯一输入，也是提交给 P07 的载荷来源（`action_type/target/parameters` 字段名与 P07 `ActionProposal` 对齐）。
-- **FR-2 Verdict 模型**：`model.py` 定义 `Verdict`（`decision: ALLOW|BLOCK`、`violations: list[Violation]`、`evaluated_layers: list[str]`、`explanation: str`）与 `Violation`（`layer / rule_id / directive / message / evidence_path`）。
-- **FR-3 规则 DSL**：`agenticx_oag/harness/dsl.py` 定义规则集 YAML schema（pydantic 加载 + 校验），四节：`concept / rules / procedures / skills / tool_allowlist`（完整 schema 见「关键实现意图」）。非法 directive / op / 层引用 → pydantic `ValidationError`，错误消息含行级字段路径。
+- **FR-2 Verdict 模型**：`model.py` 定义 `Verdict`（`decision: ALLOW|BLOCK`、`rule_set_version: str`、`violations: list[Violation]`、`checks: list[LayerCheck]`、`evaluated_layers: list[str]`、`reason_code: str`、`explanation: str`）与 `Violation`（`layer / rule_id / directive / message / evidence_path`）。`LayerCheck` 记录层名、命中规则、输入摘要与结果，供 P09 确定性回放。
+- **FR-3 规则 DSL**：`agenticx_oag/harness/dsl.py` 定义规则集 YAML schema（pydantic 加载 + 校验），四节：`concept / rules / procedures / skills / tool_allowlist`（完整 schema 见「关键实现意图」）。`rules[].depends_on` 可选，仅定义稳定求值顺序；加载时拒绝未知 directive/op、重复 ID、悬空依赖和依赖环，错误消息含字段路径。运行时若命中的 MUST/MUST_NOT 对同一约束产生矛盾，拒绝优先并在 Verdict 中记录冲突规则 ID。
 - **FR-4 条件求值器**：`dsl.py` 提供 `resolve(proposal, path) -> Any`（点分路径，支持 `intent / target.object_type / target.object_id / parameters.* / tools / completed_steps / procedure_state`）与 `matches(when, proposal) -> bool`。操作符全集：`eq / ne / gt / gte / lt / lte / in / contains / exists`（数值比较仅接受双方可转 float；类型不符返回 False 而非抛错，并记 warning）。
 - **FR-5 概念层**：`layers/concept.py`——校验 `target.object_type ∈ concept.allowed_object_types` 且 `intent ∈ concept.allowed_intents`；越界 → BLOCK（violation layer=concept）。
 - **FR-6 规则层**：`layers/rules.py`——遍历全部 `rules`，`when` 命中后按 directive 判定：`MUST_NOT` 命中即 BLOCK；`MUST` 命中后 `then` 条件为假则 BLOCK（语义：「满足 when 的提案必须同时满足 then」）；`MAY` 命中仅记 violation（`severity: note`）不拦截。未命中 `when` 的规则跳过。
@@ -108,6 +123,7 @@ rules:
         - {path: parameters.accountTier, op: eq, value: vip}
         - {path: action_type, op: eq, value: freezeAccount}
   - id: aml.rule.large-amount-two-level
+    depends_on: []
     directive: MUST
     severity: block
     message: "百万以上处置必须两级审批"
@@ -132,7 +148,7 @@ skills:
 tool_allowlist: [graph.neighbors, doc.render, llm.complete]
 ```
 
-DSL 校验规则（`dsl.py`）：`directive ∈ {MUST, MUST_NOT, MAY}`；`severity ∈ {block, note}`；`op ∈ {eq,ne,gt,gte,lt,lte,in,contains,exists}`；`when` 结构为 `{all: [cond...]}` 或单 cond；`then` 仅 `directive: MUST` 时必填；`steps` 非空且无重复；`skills[].tool` 唯一。
+DSL 校验规则（`dsl.py`）：`directive ∈ {MUST, MUST_NOT, MAY}`；`severity ∈ {block, note}`；`op ∈ {eq,ne,gt,gte,lt,lte,in,contains,exists}`；`when` 结构为 `{all: [cond...]}` 或单 cond；`then` 仅 `directive: MUST` 时必填；`depends_on` 默认空列表且必须形成 DAG；`steps` 非空且无重复；`skills[].tool` 唯一。
 
 **rules.py 判定核心（语义精确版）**：
 
@@ -198,8 +214,8 @@ class HarnessEngine:
 
 | FR | AC | 验证方式 |
 |---|---|---|
-| FR-1/2 | `Proposal`/`Verdict` 可从 JSON round-trip（`model_validate_json` → `model_dump_json` 相等） | `test_model.py` |
-| FR-3 | 未知 directive（`SHOULD`）、未知 op（`between`）、MUST 缺 `then` 三种非法 YAML 均抛 `ValidationError` 且消息含字段路径 | `test_dsl.py::test_invalid_dsl`（3 用例） |
+| FR-1/2 | `Proposal`/`Verdict` 可从 JSON round-trip（`model_validate_json` → `model_dump_json` 相等）；Verdict 含 rule_set_version、逐层 checks 和稳定 reason_code | `test_model.py` |
+| FR-3 | 未知 directive（`SHOULD`）、未知 op（`between`）、MUST 缺 `then`、重复 ID、悬空 depends_on、依赖环均抛 `ValidationError` 且消息含字段路径；构造互斥命中时 BLOCK 并列出双方规则 ID | `test_dsl.py::test_invalid_dsl` + `test_layers.py::test_conflict` |
 | FR-4 | 9 个操作符各一正一反用例；`parameters.amount` 缺失时 `gt` 返回 False；数值字符串 `"1200000"` 与 int 比较为 True（可转 float） | `test_dsl.py::test_ops`（≥18 断言） |
 | FR-5 | `object_type: "InternalMemo"`（不在 allowed）→ BLOCK layer=concept；合法类型通过 | `test_layers.py::test_concept` |
 | FR-6 | VIP + freezeAccount 提案 → BLOCK（命中 vip-freeze-manual）；amount=1500000 且 approvalLevel=two_level → 该规则通过；amount=1500000 且无 approvalLevel → BLOCK（命中 large-amount-two-level） | `test_layers.py::test_rules`（3 用例） |

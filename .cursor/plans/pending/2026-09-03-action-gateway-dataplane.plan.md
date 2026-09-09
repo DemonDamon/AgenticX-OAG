@@ -28,18 +28,28 @@ isProject: false
 - P02 plan 已锁定：`AuditSink.emit` 的事件结构与本 plan 对齐（`action_id/from/to/actor/ts/payload_hash`）；P03 的 `ActionType.preconditions` 是规则 ID 引用（P08 Harness 校验用，本 plan 不校验语义，只透传）。
 - 现状：仓库无任何 Go 代码。本 plan 建立第一个 Go module。
 
+### 本体工程演进约束
+
+本节依据项目 Phase 3 路线、控制面/数据面分离原则和公开的幂等设计方法，补充 P07 的实施约束。
+
+- `ActionType` 不只是 SQL 模板名：以 P02 `ontology.proto` 中的 ActionType 为定义源，在 `action.proto` 的提案快照、`action_instances` 与 `templates/finance/aml/actions.yaml` 中显式承载或解析 `preconditions`、`postconditions`、`state_changes`、`side_effects`、`idempotency_scope` 与 `compensation_action`。这些字段必须带 `ontology_version/action_contract_version`，禁止只藏在执行器代码中。
+- `action_id` 继续作为数据库主键和协议幂等键，由调用方生成、网关按 `action_type + target_object_id + idempotency_scope + canonical(parameters_json)` 校验其载荷指纹。相同 action_id、相同指纹是安全重放；相同 action_id、不同指纹返回 `AlreadyExists`/冲突错误且零副作用。
+- 执行前校验前置条件，执行后校验后置条件与声明的状态变化；后置条件失败必须进入 FAILED，再依据 `compensation_action` 或 `rollback_sql` 补偿，不能把“SQL 返回成功”直接等价为业务成功。
+- 每次审批、规则判断、迁移、执行和补偿都记录 `reason_code`、`rule_ids`、`evidence_ids` 与主体信息，使 P09 能解释“为何允许/拒绝/回滚”，并能沿同一 action 重放完整决策链。
+- 增补契约/存储/执行器测试：Action 字段 round-trip；同 action_id 不同参数冲突；同幂等键并发只执行一次；前置条件失败零副作用；后置条件失败触发补偿；无补偿能力时保留可人工处置的 FAILED 状态。
+
 ## 需求定义
 
 ### FR（Functional Requirements）
 
 - **FR-1 Go module 骨架**：`dataplane/go.mod`（module `github.com/agenticx/oag-dataplane`，Go 1.22，依赖仅 `google.golang.org/grpc`、`google.golang.org/protobuf`、`github.com/jackc/pgx/v5`）。目录：`dataplane/cmd/gateway/`（入口）、`dataplane/internal/{action,store,executor,approval,audit,auth}/`、`dataplane/proto/`。
-- **FR-2 action.proto 契约**：`proto/agenticx_oag/action/v1/action.proto`（完整定义见「关键实现意图」），服务 `ActionGateway` 含 `Propose / Decide / Execute / GetStatus` 四个 RPC。`make proto-go` 生成 Go 绑定到 `dataplane/proto/gen/`（提交入库，幂等）。
+- **FR-2 action.proto 契约**：`proto/agenticx_oag/action/v1/action.proto`（完整定义见「关键实现意图」），`ActionProposal` 除调用参数外携带 `ontology_version / action_contract_version / action_contract_json / idempotency_scope`，其中 contract JSON 固化本次执行解析到的前置/后置条件、状态变化、副作用与补偿声明。服务 `ActionGateway` 含 `Propose / Decide / Execute / GetStatus` 四个 RPC。`make proto-go` 生成 Go 绑定到 `dataplane/proto/gen/`（提交入库，幂等）。
 - **FR-3 状态机**：`internal/action/machine.go` 定义 9 态状态机与合法迁移表（见「关键实现意图」）。所有状态变更经 `transition(actionID, to, actor)`，非法迁移返回 `ErrIllegalTransition`（不落库）。
-- **FR-4 PG 存储**：`internal/store/pg.go` 建表 `action_instances`（`action_id` 主键即幂等键）与 `action_audit`（事件溯源）。DDL 见「关键实现意图」，由 `store.EnsureSchema()` 在启动时执行（`CREATE TABLE IF NOT EXISTS`）。
-- **FR-5 幂等**：重复 `Propose` 同一 `action_id` → 返回已存在记录且 `already_exists=true`，不重复执行、不重复审计。
+- **FR-4 PG 存储**：`internal/store/pg.go` 建表 `action_instances`（`action_id` 主键即幂等键，保存请求指纹与 Action 契约快照）与 `action_audit`（事件溯源，保存原因、规则和证据引用）。DDL 见「关键实现意图」，由 `store.EnsureSchema()` 在启动时执行（`CREATE TABLE IF NOT EXISTS`）。
+- **FR-5 幂等**：`action_id` 为协议幂等键，入库同时保存 `request_fingerprint = sha256(action_type + target_object_id + idempotency_scope + canonical(parameters_json))`。重复 `Propose` 同一 `action_id` 且指纹一致 → 返回已存在记录且 `already_exists=true`，不重复执行、不重复审计；同一 `action_id` 但指纹不同 → 返回 `AlreadyExists`/冲突错误且不泄露原参数。
 - **FR-6 审批编排**：按 `ActionType.approval_policy`（从 P02 proto 的本体定义加载，控制面传入本体 JSON）路由——`none`：Propose 后自动进入 APPROVED；`single`：进入 PENDING_APPROVAL，`Decide(approve=true)` 一次即 APPROVED；`two_level`：需两次不同 approver 的 `Decide(approve=true)`，任一 `Decide(approve=false)` → REJECTED 终态。
-- **FR-7 执行器**：`internal/executor/` 定义 `Executor` interface（`Execute` / `Rollback`）。内置 `TemplateExecutor`：从 `templates/finance/aml/actions.yaml` 读 action_type → SQL 模板映射（模板可为普通 SQL 或 AGE 的 `SELECT * FROM cypher(...)` 包装 SQL，PG+AGE 同库直跑），参数占位符 `$1` 绑定 `parameters_json` 解析值。执行成功 → SUCCEEDED 并写 `result_json`；失败 → FAILED；`Rollback` 调模板的 `rollback_sql`（配置存在时 FAILED 后自动回滚 → ROLLED_BACK；未配置则停在 FAILED）。
-- **FR-8 审计**：每次状态迁移写一条 `action_audit`（from/to/actor/payload_hash/sha256(parameters_json)/ts）；`GetStatus` 返回记录含迁移历史。审计即事件流，供 P09 审计查询与 P10 溯源面板消费。
+- **FR-7 执行器**：`internal/executor/` 定义 `Executor` interface（`Execute` / `Rollback`）。内置 `TemplateExecutor`：从 `templates/finance/aml/actions.yaml` 读 action_type → SQL 模板映射（模板可为普通 SQL 或 AGE 的 `SELECT * FROM cypher(...)` 包装 SQL，PG+AGE 同库直跑），参数占位符 `$1` 绑定 `parameters_json` 解析值。执行前运行只读 `precondition_sql`，执行后运行 `postcondition_sql`；任一条件不满足均记录稳定 `reason_code`。执行和后置条件均成功 → SUCCEEDED 并写 `result_json`；失败 → FAILED；再调用 `compensation_action` 或 `rollback_sql`（配置存在时成功补偿 → ROLLED_BACK；未配置则停在 FAILED）。
+- **FR-8 审计**：每次状态迁移写一条 `action_audit`（from/to/actor/payload_hash/reason_code/rule_ids/evidence_ids/ts）；`GetStatus` 返回记录含迁移历史。审计即事件流，供 P09 审计查询与 P10 溯源面板消费。
 - **FR-9 gRPC 服务**：`cmd/gateway/main.go` 启动 gRPC server（默认 `:7570`），`Propose` 前经 `auth.Authorizer` interface 校验 actor token（默认 `StaticTokenAuth`，token 从环境变量 `OAG_GATEWAY_TOKEN` 读；P09 完成后可替换实现，接口已留）。健康检查 `grpc_health_v1`。
 - **FR-10 首个 Action 模板**：`templates/finance/aml/actions.yaml` 定义 `freezeAccount`（`UPDATE customer SET status='frozen', updated_at=now() WHERE id=$1`，rollback `UPDATE customer SET status='active' WHERE id=$1`）与 `flagTransaction`（无 rollback，演示 FAILED 停留路径）。
 
@@ -96,6 +106,10 @@ message ActionProposal {
   string parameters_json = 5;  // JSON 编码；字段由 ActionType.parameters 定义
   string actor = 6;            // 发起者（user id 或 agent id）
   string justification = 7;    // 提案依据（引用 P05 主张 ID / 证据 ID）
+  string ontology_version = 8;
+  string action_contract_version = 9;
+  string action_contract_json = 10; // resolved snapshot: pre/post/state changes/side effects/compensation
+  string idempotency_scope = 11;
 }
 
 message ActionRecord {
@@ -114,6 +128,9 @@ message AuditEntry {
   string actor = 3;
   string payload_hash = 4;
   int64 ts_unix = 5;
+  string reason_code = 6;
+  repeated string rule_ids = 7;
+  repeated string evidence_ids = 8;
 }
 
 message ProposeRequest { ActionProposal proposal = 1; }
@@ -157,6 +174,11 @@ CREATE TABLE IF NOT EXISTS action_instances (
   parameters_json  JSONB NOT NULL DEFAULT '{}',
   actor            TEXT NOT NULL,
   justification    TEXT NOT NULL DEFAULT '',
+  ontology_version TEXT NOT NULL,
+  action_contract_version TEXT NOT NULL,
+  action_contract_json JSONB NOT NULL,
+  idempotency_scope TEXT NOT NULL DEFAULT '',
+  request_fingerprint TEXT NOT NULL,
   status           TEXT NOT NULL,
   approval_policy  TEXT NOT NULL,
   approval_count   INT NOT NULL DEFAULT 0,      -- two_level 需累加到 2
@@ -172,6 +194,9 @@ CREATE TABLE IF NOT EXISTS action_audit (
   to_status    TEXT NOT NULL,
   actor        TEXT NOT NULL,
   payload_hash TEXT NOT NULL,                  -- sha256(parameters_json)
+  reason_code  TEXT NOT NULL DEFAULT '',
+  rule_ids     TEXT[] NOT NULL DEFAULT '{}',
+  evidence_ids TEXT[] NOT NULL DEFAULT '{}',
   ts           TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_audit_action ON action_audit(action_id, ts);
@@ -184,7 +209,13 @@ namespace: finance.aml
 actions:
   freezeAccount:
     sql: "UPDATE customer SET status = 'frozen', updated_at = now() WHERE id = $1"
+    precondition_sql: "SELECT status = 'active' FROM customer WHERE id = $1"
+    postcondition_sql: "SELECT status = 'frozen' FROM customer WHERE id = $1"
     rollback_sql: "UPDATE customer SET status = 'active' WHERE id = $1"
+    state_changes: [{field: status, from: active, to: frozen}]
+    side_effects: [customer_status_write]
+    idempotency_scope: target
+    compensation_action: unfreezeAccount
     params: ["target_object_id"]
   flagTransaction:
     sql: "UPDATE transaction SET flagged = true WHERE id = $1"
@@ -231,13 +262,13 @@ gateway:
 | FR | AC | 验证方式 |
 |---|---|---|
 | FR-1 | `cd dataplane && go build ./... && go vet ./...` 零错误 | 本地命令 |
-| FR-2 | `make proto-go` 后连续执行两次 `git diff` 为空；生成代码含 `ActionGatewayClient` | 本地命令 |
+| FR-2 | `make proto-go` 后连续执行两次 `git diff` 为空；生成代码含 `ActionGatewayClient`，ActionProposal 契约快照字段和 AuditEntry 解释字段可 round-trip | 本地命令 + proto round-trip 单测 |
 | FR-3 | 合法迁移全部通过；`SUCCEEDED → PENDING_APPROVAL`、`REJECTED → APPROVED` 等非法迁移返回 `ErrIllegalTransition` 且 DB 状态不变 | `machine_test.go` 表驱动用例 ≥12 条 |
 | FR-4 | 服务启动后两张表存在；重复启动不报错 | integration 测试 |
-| FR-5 | 同 `action_id` Propose 两次：第二次 `already_exists=true`，`action_audit` 仅一条 PROPOSED 记录 | `service_test.go` |
+| FR-5 | 同 `action_id` + 同 canonical payload Propose 两次：第二次 `already_exists=true` 且仅一条 PROPOSED 审计；同 `action_id` + 不同 payload 返回冲突；并发 20 次相同请求只产生一次业务执行 | `service_test.go` + integration |
 | FR-6 | `none`：Propose 后可直接 Execute；`single`：未 Decide 时 Execute 返回错误，Decide(true) 后成功；`two_level`：一次 Approve 后仍不可执行，第二次（不同 approver）后可执行；任一 Decide(false) → REJECTED | `service_test.go` 四分支 |
-| FR-7 | `freezeAccount` 执行后 `customer.status='frozen'`；构造 SQL 失败（目标 id 不存在 + 严格模式）→ FAILED 且有 rollback 时 → ROLLED_BACK、customer 状态还原 | `template_test.go` + integration |
-| FR-8 | 任一完整链路（propose→decide→execute）后 `action_audit` 行数 = 状态迁移次数，每行含 sha256(parameters_json)；`GetStatus().history` 与表内容一致 | integration 断言 |
+| FR-7 | 前置条件失败时零写入；`freezeAccount` 执行且后置条件成立后 `customer.status='frozen'`；强制后置条件失败 → FAILED → 补偿成功后 ROLLED_BACK、状态还原；无补偿配置时停在 FAILED | `template_test.go` + integration |
+| FR-8 | 任一完整链路（propose→decide→execute）后 `action_audit` 行数 = 状态迁移次数，每行含 payload hash、reason_code 及规则/证据引用；`GetStatus().history` 与表内容一致 | integration 断言 |
 | FR-9 | 带 token 调用成功；错 token 返回 `PermissionDenied`；`grpcurl -plaintext localhost:7570 grpc.health.v1.Health/Check` 返回 SERVING | integration |
 | FR-10 | `flagTransaction` 无 rollback：执行失败后停在 FAILED | integration |
 

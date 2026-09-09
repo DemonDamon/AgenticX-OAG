@@ -28,19 +28,40 @@ isProject: false
 - P07 plan 的 `action_audit` 表与 `AuditEntry`（from_status/to_status/actor/payload_hash/ts_unix）是审计事件的产生源之一——本 plan 的 `AuditEvent` 模型与其字段一一对齐（统一 schema 见「关键实现意图」）。
 - `docs/architecture.md` §4 存储选型：审计检索是企业刚需（PG FTS 起步 → OpenSearch）——本 plan PG 落库即满足 POC，OpenSearch 留后续。
 
+### 本体工程演进约束
+
+依据项目多租户原则、NIST RBAC 与 W3C PROV-O，权限判断、规则判断和 Action 执行应形成一条可验证的决策链。P09 在既有 FR 基础上增加以下约束：
+
+- 四权矩阵始终按 `subject × tenant × ObjectType/ObjectId × permission × condition` 求值，`read/write/approve/admin` 权限正交；一次权限求值中无授权 grant 命中则 deny。该规则只定义 P09 权限引擎的授权语义，不定义 P11 在权限服务不可用时的运行策略。`admin` 是否蕴含其他权限必须由策略显式声明，禁止代码隐式放大授权。
+- `DecisionRecord` 的最小链路为 `retrieval → evidence → claim → rule verdict → proposal → authorization → approval → action transition → outcome`；每个节点保存稳定 ID、发生时间、主体、输入摘要哈希、ontology/rule/policy 版本和来源引用。
+- PROV-O 映射应覆盖 Entity/Activity/Agent 及 `used`、`wasGeneratedBy`、`wasDerivedFrom`、`wasAssociatedWith`、`wasInformedBy`；自定义关系放在 OAG namespace，不能冒充标准 PROV-O 词汇。
+- 证据写入时标注来源等级（原始记录/受控文档/推导结果/模型生成）与可信度；回放必须显示来源等级、缺失节点和版本不可用警告，不能把模型生成内容展示为已验证事实。
+- 增补 AC：对象级条件授权与租户隔离；默认拒绝；同一决策按时间序完整回放；缺失证据/规则版本时可降级回放并显式报警；PROV Turtle 可由 rdflib 解析且关键边数量符合预期。
+
+### 来源分级与适用边界
+
+来源等级定义见 `docs/ontology-evolution-backlog.md`：
+
+| 决策 | 来源等级 | 适用边界 |
+|---|---|---|
+| 无授权 grant 命中时 deny | S1/S2/S3 | 仅适用于 P09 收到完整求值输入并完成策略求值的情况 |
+| 四权正交、admin 不隐含其他权限 | S1 | 项目既有治理设计 |
+| tenant/ObjectId/condition 参与求值 | S1/S4 | 多租户是既有原则；对象级条件细化是待 Maintainer 确认的工程建议 |
+| 权限服务不可用时如何处理读取 | S4 | 不属于 P09 策略求值结论，由 P11 的运行策略单独决定 |
+
 ## 需求定义
 
 ### FR（Functional Requirements）
 
-- **FR-1 权限模型**：`agenticx_oag/governance/model.py` 定义 `Permission`（Literal `read|write|approve|admin`）、`Grant`（`object_type: str`（支持 `*`）、`permissions: list[Permission]`、`condition: Cond | None`）、`Role`（`id` + `grants`）、`RoleBinding`（`user_id` + `role_ids`）、`Decision`（`allowed: bool / matched_grant / reason / evaluated_at`）。`Cond` 复用 P08 的条件结构语义（`path/op/value`，path 相对对象属性 `props.*`）。
+- **FR-1 权限模型**：`agenticx_oag/governance/model.py` 定义 `Permission`（Literal `read|write|approve|admin`）、`Grant`（`tenant_id: str|*`、`object_type: str`（支持 `*`）、`object_ids: list[str] | None`、`permissions: list[Permission]`、`condition: Cond | None`）、`Role`（`id` + `grants`）、`RoleBinding`（`user_id` + `tenant_id` + `role_ids`）、`Decision`（`allowed: bool / matched_grant / reason_code / reason / evaluated_at / policy_version`）。`Cond` 复用 P08 的条件结构语义（`path/op/value`，path 相对对象属性 `props.*`）。
 - **FR-2 策略 YAML**：`agenticx_oag/governance/policy.py` 加载校验 `policy.yaml`（pydantic，schema 见「关键实现意图」）。默认拒绝原则：无任何 grant 命中 → deny。
-- **FR-3 策略引擎**：`engine.py` 的 `PolicyEngine(policy, bindings).check(user_id, object_type, permission, object_props=None) -> Decision`——求值顺序：① 汇总 user 的全部角色 grants；② 显式 `object_type` 匹配优先于 `*` 通配；③ 同一 grant 内 `permission` 必须显式列出（admin 不隐含其余三权，四权正交）；④ 带 `condition` 的 grant 仅当条件对 `object_props` 求值为真才命中；⑤ 命中任一 grant → allow（记录 matched_grant），否则 deny。
+- **FR-3 策略引擎**：`engine.py` 的 `PolicyEngine(policy, bindings).check(user_id, tenant_id, object_type, permission, object_id=None, object_props=None) -> Decision`——求值顺序：① 只汇总同 tenant 的角色 grants；② 显式对象 ID、`object_type` 匹配优先于通配；③ 同一 grant 内 `permission` 必须显式列出（admin 不隐含其余三权，四权正交）；④ 带 `condition` 的 grant 仅当条件对 `object_props` 求值为真才命中；⑤ 命中任一 grant → allow（记录 matched_grant），否则以稳定 reason_code 默认拒绝。
 - **FR-4 角色绑定存储**：`RoleBindingStore` Protocol（`get_bindings(user_id) / put_binding(...)`）+ `JSONFileBindingStore`（`~/.agenticx_oag/bindings.json` 或环境变量 `OAG_GOVERNANCE_BINDINGS` 指定路径；文件不存在返回空绑定）。外部 IDP 对接由调用方先经 P02 `IDPProvider.verify_token` 取 roles，再以 `PolicyEngine.check_roles(roles, ...)` 重载入口传入（引擎两个入口：by user_id 走 Store、by roles 直评）。
-- **FR-5 审计事件模型**：`model.py` 定义 `AuditEvent`（pydantic，字段与 P07 AuditEntry 对齐 + 通用扩展位，见「关键实现意图」）。
+- **FR-5 审计事件模型**：`model.py` 定义 `AuditEvent`（pydantic，字段与 P07 AuditEntry 对齐 + `reason_code/rule_ids/evidence_ids/ontology_version/rule_set_version/policy_version/source_level/confidence` 通用扩展位，见「关键实现意图」）。来源等级限定为 `source_record|controlled_document|derived|model_generated`。
 - **FR-6 AuditSink 实现**：`audit.py`——`JsonlAuditSink(path)` 与 `PgAuditSink(dsn)`，两者都实现 P02 `AuditSink` Protocol（`async emit(event: dict)`）。PgAuditSink 建表 `governance_audit`（DDL 见「关键实现意图」），写入失败降级写 JSONL（文件路径 `audit_fallback.jsonl`）并 log warning——审计不允许丢事件。`AuditQuery.filter(actor=..., action_id=..., decision_id=..., ts_from=..., ts_to=...) -> list[AuditEvent]`（JSONL 实现全扫；PG 实现走 SQL WHERE）。
-- **FR-7 决策记录**：`replay.py` 定义 `DecisionRecord`（pydantic：`decision_id / question / actor / ts / evidence_ids / claims / pack_ref / proposal_id / action_id / outcome / ontology_ns`）+ `DecisionStore` Protocol + `JsonlDecisionStore` / `PgDecisionStore`（PG 表 `decision_records`）。`record_decision(dr)` 写入并同发一条 `AuditEvent(kind="decision")` 到注入的 AuditSink。
-- **FR-8 PROV-O 导出**：`prov.py` 的 `export_prov_ttl(dr: DecisionRecord, audit_events: list[AuditEvent]) -> str`——映射规则见「关键实现意图」（question→Entity、retrieval/generation→Activity、actor→Agent、action→Activity，`prov:wasDerivedFrom / prov:wasGeneratedBy / prov:wasAssociatedWith / prov:used` 连接）。输出必须可被 rdflib `parse(format="turtle")` 回读。
-- **FR-9 审计回放**：`replay.py` 的 `ReplayBundle`（`decision: DecisionRecord / evidence_timeline: list[AuditEvent] / action_history: list[AuditEvent] / prov_ttl: str`）+ `replay(decision_id, decision_store, audit_query) -> ReplayBundle`——按 ts 升序组装该决策的全部审计事件（`decision_id` 或 `action_id` 关联），内嵌 PROV-O 导出。这是「审计回放：重现任意决策完整上下文」的落地。
+- **FR-7 决策记录**：`replay.py` 定义 `DecisionNode`（`node_id/kind/ts/actor/input_hash/source_refs/ontology_version/rule_set_version/policy_version/detail`）与 `DecisionRecord`（`decision_id / question / actor / ts / evidence_ids / claims / pack_ref / proposal_id / action_id / outcome / ontology_ns / nodes`）。`nodes.kind` 允许 `retrieval|evidence|claim|rule_verdict|proposal|authorization|approval|action_transition|outcome`。配套 `DecisionStore` Protocol + `JsonlDecisionStore` / `PgDecisionStore`；`record_decision(dr)` 写入并同发一条 `AuditEvent(kind="decision")`。
+- **FR-8 PROV-O 导出**：`prov.py` 的 `export_prov_ttl(dr: DecisionRecord, audit_events: list[AuditEvent]) -> str`——映射规则见「关键实现意图」（Entity/Activity/Agent 与 `used / wasGeneratedBy / wasDerivedFrom / wasAssociatedWith / wasInformedBy`）。自定义节点属性仅使用 OAG namespace，输出必须可被 rdflib 回读。
+- **FR-9 审计回放**：`replay.py` 的 `ReplayBundle`（`decision / evidence_timeline / action_history / warnings / prov_ttl`）+ `replay(...)`——按 ts 升序组装该决策的全部审计事件。证据或版本缺失时保留可用链路并写稳定 warning，不伪造节点或静默失败。
 - **FR-10 AML 策略样例**：`templates/finance/aml/policy.yaml`（完整内容见「关键实现意图」）：analyst（只读 + 区域条件）、compliance_officer（读/写/审批）、admin（四权全量）。
 - **FR-11 CLI**：`python -m agenticx_oag.governance` 支持 `check <user> <object_type> <permission> [--props '{}']` 与 `replay <decision_id>`，供 P10 Demo 与售前演示。
 
@@ -104,6 +125,14 @@ class AuditEvent(BaseModel):
     to_status: str | None = None
     payload_hash: str | None = None
     object_type: str | None = None
+    reason_code: str = ""
+    rule_ids: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    ontology_version: str = ""
+    rule_set_version: str = ""
+    policy_version: str = ""
+    source_level: Literal["source_record", "controlled_document", "derived", "model_generated"] | None = None
+    confidence: float | None = None
     detail: dict[str, Any] = Field(default_factory=dict)
 ```
 
@@ -124,6 +153,14 @@ CREATE TABLE IF NOT EXISTS governance_audit (
   to_status   TEXT,
   payload_hash TEXT,
   object_type TEXT,
+  reason_code TEXT NOT NULL DEFAULT '',
+  rule_ids TEXT[] NOT NULL DEFAULT '{}',
+  evidence_ids TEXT[] NOT NULL DEFAULT '{}',
+  ontology_version TEXT NOT NULL DEFAULT '',
+  rule_set_version TEXT NOT NULL DEFAULT '',
+  policy_version TEXT NOT NULL DEFAULT '',
+  source_level TEXT,
+  confidence DOUBLE PRECISION,
   detail      JSONB NOT NULL DEFAULT '{}'
 );
 CREATE INDEX IF NOT EXISTS idx_gov_audit_action ON governance_audit(action_id, ts);
@@ -140,7 +177,8 @@ CREATE TABLE IF NOT EXISTS decision_records (
   proposal_id TEXT,
   action_id   TEXT,
   outcome     TEXT,
-  ontology_ns TEXT NOT NULL DEFAULT ''
+  ontology_ns TEXT NOT NULL DEFAULT '',
+  nodes       JSONB NOT NULL DEFAULT '[]'
 );
 ```
 
@@ -186,13 +224,13 @@ async def replay(decision_id, decision_store, audit_query) -> ReplayBundle:
 | FR | AC | 验证方式 |
 |---|---|---|
 | FR-2 | 非法 policy.yaml（未知 permission `delete`、grant 缺 object_type）→ `ValidationError` 且消息含字段路径 | `test_policy.py` |
-| FR-3 | ① admin 对任意类型 admin 权 → allow；② analyst（仅 `*`+read）对 Customer write → deny（默认拒绝）；③ analyst 对 Customer read → allow（通配命中）；④ 带条件 grant：condition path `props.region` eq `CN`，对象 props region=US → deny、region=CN → allow；⑤ 四权正交：仅有 `[read]` grant 时 approve → deny | `test_engine.py`（≥5 用例） |
+| FR-3 | 覆盖显式 allow、默认 deny、条件 grant、四权正交、跨 tenant deny、object_ids 不含目标时 deny；所有 deny 有稳定 reason_code | `test_engine.py`（≥7 用例） |
 | FR-3 | `check_roles(roles=["analyst"], ...)` 与 `check(user_id→analyst)` 结果一致 | `test_engine.py::test_roles_entry` |
 | FR-4 | 绑定文件不存在时 check 走空绑定 → deny 不抛错；put_binding 后 get 生效 | `test_engine.py::test_binding_store` |
 | FR-5/6 | JsonlAuditSink emit 3 事件后 filter(actor=...) 命中 2；PG 断连（错误 DSN）时 emit 落 fallback JSONL 且返回/记录可观测降级信号 | `test_audit.py` |
 | FR-6 | PgAuditSink 集成：emit → `governance_audit` 行数一致，字段 round-trip 相等（integration，docker PG） | `test_audit.py::test_pg` |
 | FR-7 | record_decision 后：decision_store 可 get；AuditSink 收到 kind="decision" 事件且 decision_id 一致 | `test_replay.py` |
 | FR-8 | export_prov_ttl 输出被 `rdflib.Graph().parse(data=ttl, format="turtle")` 解析无异常；图中 `prov:Activity` ≥2、`prov:Agent` ≥1、含至少一条 `prov:wasAssociatedWith`；action_id 非空时存在 `prov:wasInformedBy` 三元组 | `test_prov.py` |
-| FR-9 | 构造 1 条 DecisionRecord + 5 条审计事件（3 条 decision 关联、2 条 action 关联）→ replay 返回 evidence_timeline 按时间升序、无重复、prov_ttl 非空 | `test_replay.py::test_replay_bundle` |
+| FR-9 | 完整九节点 DecisionRecord 回放按时间升序且无重复；删除 evidence 与 rule version 后仍返回其余链路，warnings 精确列出缺失项，prov_ttl 非空 | `test_replay.py::test_replay_bundle` + `test_replay_missing_refs` |
 | FR-10 | AML policy.yaml 加载零错误；样例断言：compliance_officer 对 Transaction approve → allow、analyst 对 Transaction write → deny | `test_policy.py::test_aml_policy` |
 | FR-11 | `python -m agenticx_oag.governance check analyst Customer read` 输出 JSON `allowed==true`；`... check analyst Customer write` 输出 `allowed==false` | 本地命令 |
