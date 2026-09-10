@@ -6,6 +6,8 @@
 
 经公开来源复核后进入产品规划的工程任务，统一登记在 [`docs/ontology-evolution-backlog.md`](../docs/ontology-evolution-backlog.md)；本目录继续保存证据、边界和实验记录，不重复维护工程任务状态。
 
+跨方向的工程实践总结见 [`本体工程实践综合`](06-evaluation-selection-and-case-studies/deliverables/ontology-engineering-practice-synthesis.md)，它把语义模型、受控执行、Agent 门禁、审计回放与生产质量门映射到当前 OE 工作集。
+
 
 
 > `research/` 不存放未经确认可再分发的原文附件、付费资料、受限内容、全文转写稿或专用解析产物。受限资料只登记原则级来源类别；工程结论进入仓库前，必须由公开标准、公开实现或项目实验独立复核，且不得记录可识别资料的书名、作者、内部社群、章节页码、原文件名或本地路径。

@@ -29,6 +29,7 @@ P02-P06 已完成，项目已经具备本体模型、知识图谱构建、OAG �
 | OE-08 | Object View、Action 绑定和权限继承的 Workshop MVP | `docs/roadmap.md` Phase 5 | S1/S4 | P11 | pending |
 | OE-09 | 方法记忆：把成功的分析路径沉淀为可复用模板 | `docs/roadmap.md` Phase 4 | S1 | 后续 P12+ | backlog |
 | OE-10 | 真实 Provider、持久化 Pack、检索路径溯源和生产可复现环境 | `docs/architecture.md`、P05 契约 | S1/S4 | 后续 P12+ | backlog |
+| OE-11 | 生产工程质量门：故障矩阵、幂等/补偿验证、可观测性和安全负向用例 | P07-P09 既有验收原则、NIST AI RMF、OpenTelemetry | S1/S2/S4 | P07/P08/P09 验收增强（待确认） | backlog |
 
 ## 公开依据与工程边界
 
@@ -65,6 +66,7 @@ P02-P06 已完成，项目已经具备本体模型、知识图谱构建、OAG �
 3. 每项能力必须有确定性单测、失败路径和回放数据；只有 UI 演示不算完成。
 4. 新增字段必须进入 YAML/Proto/Pydantic 的契约边界，并说明版本兼容策略。
 5. 外部实现只作为设计参考；复用代码前必须核验许可证、版本和实际实现范围。
+6. P07-P09 共用正常、权限拒绝、前置失败、执行失败、后置失败、补偿失败、重试幂等、回放一致性和治理依赖故障矩阵；详细建议见[本体工程实践综合](../research/06-evaluation-selection-and-case-studies/deliverables/ontology-engineering-practice-synthesis.md)。
 
 ## 相关入口
 

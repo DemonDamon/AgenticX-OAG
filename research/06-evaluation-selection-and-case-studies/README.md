@@ -47,3 +47,9 @@
 
 
 四类本体的对比与选型必须以公开标准、公开实现和项目评测为依据。后续每个行业案例都须清楚注明公开来源、适用前提、失败边界和与 AgenticX / Near 的实际兼容性；受限资料不得作为唯一证据或随仓库分发。
+
+## 已审核交付物
+
+- [`deliverables/ontology-engineering-practice-synthesis.md`](deliverables/ontology-engineering-practice-synthesis.md)：将语义模型、受控执行、Agent 门禁、审计回放和生产质量门整理为项目内工程框架，并映射到 OE-01～OE-11。
+- [`deliverables/enterprise-ontology-and-tooling-roadmap.md`](deliverables/enterprise-ontology-and-tooling-roadmap.md)：企业本体与工具层的参考架构和落地路线。
+- [`deliverables/ontology-open-source-tool-landscape.md`](deliverables/ontology-open-source-tool-landscape.md)：公开开源实现的能力分层、选型边界和最小试验建议。
