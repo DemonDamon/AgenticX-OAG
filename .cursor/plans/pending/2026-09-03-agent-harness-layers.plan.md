@@ -14,7 +14,7 @@ isProject: false
 
 **Goal:** 落地项目既有治理双维度中的**语义约束维度**（`docs/enterprise-landing.md` §3.1）：Agent/LLM 生成的「提案」（Proposal）在执行前必须依次通过概念层 → 规则层 → 流程层 → 技能层四道校验，任何一层 BLOCK 即拦截，实现「先校验后执行」。按当前公开资料核验，Semantica 主要覆盖知识图谱、本体与检索能力；本 plan 计划形成的差异化能力是 Agent 提案执行前的运行时门禁。
 
-**Architecture:** 纯 Python 库（控制面），无 IO 依赖：输入是结构化 `Proposal`（pydantic）+ 规则集（YAML DSL），输出是 `Verdict`（ALLOW/BLOCK + 命中违规明细）。四层校验器各自独立成模块，`HarnessEngine` 按固定顺序编排并短路。规则 ID 与 P03 `ActionType.preconditions` 对齐（P03 做格式校验，本 plan 提供规则本体与交叉校验工具）。校验通过的 Proposal 由调用方（P10 Demo / 未来 Agent Runtime）提交给 P07 Action Gateway 执行——本 plan 不调用 P07，两者通过 Proposal JSON schema 契约解耦、可并行开发。
+**Architecture:** 纯 Python 库（控制面），无 IO 依赖：输入是结构化 `Proposal`、由可信调用方组装的 `EvaluationContext`（均为 pydantic）+ 规则集（YAML DSL），输出是 `Verdict`（ALLOW/BLOCK + 命中违规明细 + 待执行义务）。Proposal 只承载提案方可声明的意图、目标、参数、工具和依据主张；主体、租户、对象事实与流程进度等权威状态放入 EvaluationContext。四层校验器各自独立成模块，`HarnessEngine` 按固定顺序编排并短路。规则 ID 与 P03 `ActionType.preconditions` 对齐（P03 做格式校验，本 plan 提供规则本体与交叉校验工具）。校验通过的 Proposal、EvaluationContext 及 Verdict 由可信调用方交给 P07 的 `GateAuthorizer`；P07 不得信任客户端自报的 ALLOW、流程状态或审批参数。三者以输入指纹、版本化 Verdict/义务契约解耦，可并行开发。
 
 **Tech Stack:** Python 3.11 / pydantic v2 / pyyaml / jsonschema（新增依赖，加入 `pyproject.toml` 核心依赖）/ pytest
 
@@ -40,31 +40,32 @@ isProject: false
 | 流程层 | 当前步骤及前驱是否完整 | 不授权工具与数据 | SOP ID/版本、已完成与缺失步骤 |
 | 技能层 | 可调用哪些工具，输入输出是否合约 | 不替工具执行副作用 | skill/tool ID、schema 版本、校验结果 |
 
-- `Verdict` 增补 `rule_set_version`、逐层 `checks` 与稳定 `reason_code`；相同规则版本和 Proposal 必须生成可比较的确定性解释，供 P09 回放。
+- `Verdict` 增补 `rule_set_version`、`proposal_hash`、`context_hash`、逐层 `checks` 与稳定 `reason_code`；相同规则版本、Proposal 和 EvaluationContext 必须生成可比较的确定性解释，供 P09 回放。
 - 规则 DSL 为 `rules[]` 增加可选 `depends_on: list[rule_id]`，形成依赖与冲突检测的最小闭环：加载时拒绝重复 ID、悬空引用与显式循环；同一 Proposal 上相互矛盾的 MUST/MUST_NOT 结论按“拒绝优先”处理并输出冲突明细。复杂规则平台、灰度发布 UI 仍保持 Out of scope。
 - 规则集变更必须有 Golden Proposal 回归集，至少覆盖每层 ALLOW/BLOCK、规则冲突、规则版本切换和解释稳定性；不能仅验证最终 `decision`，还要断言命中路径与原因。
+- 参数 Schema 合法、工具在白名单或 P08 返回 ALLOW 均不代表 P09 已授权。规则若要求人工审批，只输出 `required_approval_policy` 义务；审批是否完成由 P07 权威状态机判定，禁止把客户端 `parameters.approvalLevel` 当成审批证据。
 
 ## 需求定义
 
 ### FR（Functional Requirements）
 
-- **FR-1 Proposal 模型**：`agenticx_oag/harness/model.py` 定义 `Proposal`（pydantic，字段见「关键实现意图」）。Proposal 是四层校验的唯一输入，也是提交给 P07 的载荷来源（`action_type/target/parameters` 字段名与 P07 `ActionProposal` 对齐）。
-- **FR-2 Verdict 模型**：`model.py` 定义 `Verdict`（`decision: ALLOW|BLOCK`、`rule_set_version: str`、`violations: list[Violation]`、`checks: list[LayerCheck]`、`evaluated_layers: list[str]`、`reason_code: str`、`explanation: str`）与 `Violation`（`layer / rule_id / directive / message / evidence_path`）。`LayerCheck` 记录层名、命中规则、输入摘要与结果，供 P09 确定性回放。
-- **FR-3 规则 DSL**：`agenticx_oag/harness/dsl.py` 定义规则集 YAML schema（pydantic 加载 + 校验），四节：`concept / rules / procedures / skills / tool_allowlist`（完整 schema 见「关键实现意图」）。`rules[].depends_on` 可选，仅定义稳定求值顺序；加载时拒绝未知 directive/op、重复 ID、悬空依赖和依赖环，错误消息含字段路径。运行时若命中的 MUST/MUST_NOT 对同一约束产生矛盾，拒绝优先并在 Verdict 中记录冲突规则 ID。
-- **FR-4 条件求值器**：`dsl.py` 提供 `resolve(proposal, path) -> Any`（点分路径，支持 `intent / target.object_type / target.object_id / parameters.* / tools / completed_steps / procedure_state`）与 `matches(when, proposal) -> bool`。操作符全集：`eq / ne / gt / gte / lt / lte / in / contains / exists`（数值比较仅接受双方可转 float；类型不符返回 False 而非抛错，并记 warning）。
+- **FR-1 输入模型**：`agenticx_oag/harness/model.py` 定义 `Proposal` 与 `EvaluationContext`（pydantic，字段见「关键实现意图」）。Proposal 是提交给 P07 的提案载荷来源（`action_type/target/parameters` 字段名与 P07 `ActionProposal` 对齐），不得携带权威流程或授权状态；EvaluationContext 由可信服务端适配器组装，承载 `subject_id / tenant_id / object_facts / procedure_state / completed_steps / context_version`，客户端同名字段不得覆盖它。
+- **FR-2 Verdict 模型**：`model.py` 定义 `Verdict`（`decision: ALLOW|BLOCK`、`proposal_hash: str`、`context_hash: str`、`context_version: str`、`rule_set_version: str`、`violations: list[Violation]`、`obligations: list[Obligation]`、`checks: list[LayerCheck]`、`evaluated_layers: list[str]`、`reason_code: str`、`explanation: str`）与 `Violation`（`layer / rule_id / directive / message / evidence_path`）。`proposal_hash` 与 `context_hash` 分别按完整 Proposal、完整 EvaluationContext 的 RFC 8785 JSON Canonicalization bytes 计算 SHA-256 后的小写 hex，禁止只哈希调用方挑选的部分字段；`Obligation` 最小支持 `required_approval_policy: single|two_level`，只表达 P07 后续必须满足的条件，不表达审批已经完成；`LayerCheck` 记录层名、命中规则、输入摘要与结果，供 P09 确定性回放。
+- **FR-3 规则 DSL**：`agenticx_oag/harness/dsl.py` 定义规则集 YAML schema（pydantic 加载 + 校验），四节：`concept / rules / procedures / skills / tool_allowlist`（完整 schema 见「关键实现意图」）。`rules[].depends_on` 可选，仅定义稳定求值顺序；MUST 规则可声明 `then` 约束、`obligations` 或两者，至少存在一项；加载时拒绝未知 directive/op/obligation、重复 ID、悬空依赖和依赖环，错误消息含字段路径。运行时若命中的 MUST/MUST_NOT 对同一约束产生矛盾，拒绝优先并在 Verdict 中记录冲突规则 ID。
+- **FR-4 条件求值器**：`dsl.py` 提供 `resolve(proposal, context, path) -> Any` 与 `matches(when, proposal, context) -> bool`。点分路径必须显式区分 `proposal.intent / proposal.target.* / proposal.parameters.* / proposal.tools` 与 `context.subject_id / context.tenant_id / context.object_facts.* / context.procedure_state / context.completed_steps`；不再提供无命名空间的流程状态别名。操作符全集：`eq / ne / gt / gte / lt / lte / in / contains / exists`（数值比较仅接受双方可转 float；类型不符返回 False 而非抛错，并记 warning）。
 - **FR-5 概念层**：`layers/concept.py`——校验 `target.object_type ∈ concept.allowed_object_types` 且 `intent ∈ concept.allowed_intents`；越界 → BLOCK（violation layer=concept）。
-- **FR-6 规则层**：`layers/rules.py`——遍历全部 `rules`，`when` 命中后按 directive 判定：`MUST_NOT` 命中即 BLOCK；`MUST` 命中后 `then` 条件为假则 BLOCK（语义：「满足 when 的提案必须同时满足 then」）；`MAY` 命中仅记 violation（`severity: note`）不拦截。未命中 `when` 的规则跳过。
-- **FR-7 流程层**：`layers/procedure.py`——按 `target.object_type` 匹配 procedure（无匹配则通过，视为该对象类型无 SOP 约束）：`procedure_state` 必须在该 procedure 的 `steps` 内；`order_strict: true` 时，`procedure_state` 的前驱步骤必须全部出现在 `completed_steps` 中（越级/跳步 → BLOCK）。
+- **FR-6 规则层**：`layers/rules.py`——遍历全部 `rules`，`when` 命中后按 directive 判定：`MUST_NOT` 命中即 BLOCK；`MUST` 的 `then` 条件为假则 BLOCK，满足时把该规则的 obligations 归并到 Verdict；多个审批义务取更严格者（`two_level > single`）并保留产生义务的 rule ID；`MAY` 命中仅记 note，不拦截也不产生强制义务。未命中 `when` 的规则跳过。
+- **FR-7 流程层**：`layers/procedure.py`——按 `proposal.target.object_type` 匹配 procedure（无匹配则通过，视为该对象类型无 SOP 约束）：`context.procedure_state` 必须在该 procedure 的 `steps` 内；`order_strict: true` 时，其前驱步骤必须全部出现在 `context.completed_steps` 中（越级/跳步 → BLOCK）。流程字段只读 EvaluationContext，忽略或拒绝客户端请求体中的同名字段。
 - **FR-8 技能层**：`layers/skill.py`——`tools` 必须 ⊆ `tool_allowlist`（越权工具 → BLOCK）；每个 tool 若在 `skills` 中定义了 `input_schema`，其 `tool_inputs[tool]` 必须通过 JSON Schema 校验（校验失败 → BLOCK）；`timeout_ms / max_retries` 仅承载于 DSL 供执行方读取，本层不做超时 enforcement。
-- **FR-9 引擎编排**：`agenticx_oag/harness/engine.py` 的 `HarnessEngine(rule_set).evaluate(proposal) -> Verdict`——固定顺序 concept → rules → procedure → skill，**任一层 BLOCK 立即返回**（后续层不再评估，`evaluated_layers` 只含已评估层）；全部通过 → ALLOW。
-- **FR-10 AML 规则集**：`templates/finance/aml/harness.yaml`（完整内容见「关键实现意图」）——含 VIP 冻结人工复核（MUST_NOT）、百万级处置两级审批（MUST）、可疑交易处置 SOP（5 步 order_strict）、graph.neighbors 工具契约。
+- **FR-9 引擎编排**：`agenticx_oag/harness/engine.py` 的 `HarnessEngine(rule_set).evaluate(proposal, context) -> Verdict`——固定顺序 concept → rules → procedure → skill，**任一层 BLOCK 立即返回**（后续层不再评估，`evaluated_layers` 只含已评估层）；全部通过 → ALLOW。Verdict 必须绑定 proposal/context 两个哈希与 context_version。
+- **FR-10 AML 规则集**：`templates/finance/aml/harness.yaml`（完整内容见「关键实现意图」）——含 VIP 冻结人工复核（MUST_NOT）、百万级处置产生两级审批义务（MUST，不读取客户端审批层级参数）、可疑交易处置 SOP（5 步 order_strict）、graph.neighbors 工具契约。
 - **FR-11 交叉校验工具**：`agenticx_oag/harness/crossref.py` 的 `check_preconditions(ontology_yaml, harness_yaml) -> list[str]`——返回本体中引用了但规则集中不存在的 preconditions ID（空列表=一致）。
-- **FR-12 CLI**：`python -m agenticx_oag.harness` 支持 `validate <harness.yaml>`（DSL 自检）与 `check <proposal.json> <harness.yaml>`（输出 Verdict JSON），供 P10 Demo 与售前演示直接调用。
+- **FR-12 CLI**：`python -m agenticx_oag.harness` 支持 `validate <harness.yaml>`（DSL 自检）与 `check <proposal.json> <context.json> <harness.yaml>`（输出 Verdict JSON），供 P10 Demo 与售前演示直接调用。CLI 的 context 文件只用于本地演示；生产必须由可信服务端适配器构造 EvaluationContext。
 
 ### NFR（Non-Functional Requirements）
 
 - **NFR-1** 单次 `evaluate`（≤100 条规则）P95 < 5ms（纯内存求值，无 IO）。
-- **NFR-2** 求值是纯函数：同一 (rule_set, proposal) 输入永远同输出（可重放，审计要求）。
+- **NFR-2** 求值是纯函数：同一 (rule_set, proposal, evaluation_context) 输入永远同输出（可重放，审计要求）。
 - **NFR-3** DSL 字段一旦合入即视为契约（与 P02 接口同等地位），变更需显式版本化（rule_set.version 递增）。
 
 ## 精确落点
@@ -84,7 +85,7 @@ isProject: false
 
 ## 关键实现意图
 
-**Proposal 模型（字段即 P07 契约）**：
+**输入模型（Proposal 字段即 P07 提案契约；EvaluationContext 由可信调用方构造）**：
 
 ```python
 class ObjectRef(BaseModel):
@@ -92,6 +93,7 @@ class ObjectRef(BaseModel):
     object_id: str
 
 class Proposal(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     proposal_id: str
     agent_id: str
     intent: str                      # 如 "risk_assessment" / "investigation"
@@ -101,8 +103,15 @@ class Proposal(BaseModel):
     tools: list[str] = Field(default_factory=list)
     tool_inputs: dict[str, dict[str, Any]] = Field(default_factory=dict)  # tool -> 入参
     claims: list[str] = Field(default_factory=list)   # 依据主张 ID（P05 claim-ledger）
-    completed_steps: list[str] = Field(default_factory=list)  # SOP 已完成步骤
-    procedure_state: str | None = None                 # 当前 SOP 步骤
+
+class EvaluationContext(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    subject_id: str
+    tenant_id: str
+    object_facts: dict[str, Any] = Field(default_factory=dict)  # 可信对象数据快照
+    completed_steps: list[str] = Field(default_factory=list)   # 权威 SOP 历史
+    procedure_state: str | None = None                         # 权威当前步骤
+    context_version: str                                      # 快照/状态版本
 ```
 
 **规则 DSL（templates/finance/aml/harness.yaml 完整内容）**：
@@ -120,9 +129,9 @@ rules:
     message: "VIP 客户冻结必须人工复核，Agent 不得直接提案"
     when:
       all:
-        - {path: target.object_type, op: eq, value: Customer}
-        - {path: parameters.accountTier, op: eq, value: vip}
-        - {path: action_type, op: eq, value: freezeAccount}
+        - {path: proposal.target.object_type, op: eq, value: Customer}
+        - {path: context.object_facts.account_tier, op: eq, value: vip}
+        - {path: proposal.action_type, op: eq, value: freezeAccount}
   - id: aml.rule.large-amount-two-level
     depends_on: []
     directive: MUST
@@ -130,8 +139,9 @@ rules:
     message: "百万以上处置必须两级审批"
     when:
       all:
-        - {path: parameters.amount, op: gt, value: 1000000}
-    then: {path: parameters.approvalLevel, op: eq, value: two_level}
+        - {path: proposal.parameters.amount, op: gt, value: 1000000}
+    obligations:
+      - {type: required_approval_policy, value: two_level}
 procedures:
   - id: aml.proc.suspect-handling
     object_type: Transaction
@@ -149,20 +159,22 @@ skills:
 tool_allowlist: [graph.neighbors, doc.render, llm.complete]
 ```
 
-DSL 校验规则（`dsl.py`）：`directive ∈ {MUST, MUST_NOT, MAY}`；`severity ∈ {block, note}`；`op ∈ {eq,ne,gt,gte,lt,lte,in,contains,exists}`；`when` 结构为 `{all: [cond...]}` 或单 cond；`then` 仅 `directive: MUST` 时必填；`depends_on` 默认空列表且必须形成 DAG；`steps` 非空且无重复；`skills[].tool` 唯一。
+DSL 校验规则（`dsl.py`）：`directive ∈ {MUST, MUST_NOT, MAY}`；`severity ∈ {block, note}`；`op ∈ {eq,ne,gt,gte,lt,lte,in,contains,exists}`；`when` 结构为 `{all: [cond...]}` 或单 cond；MUST 至少声明 `then` 或 `obligations`，其他 directive 不得声明强制义务；`required_approval_policy ∈ {single,two_level}`；`depends_on` 默认空列表且必须形成 DAG；`steps` 非空且无重复；`skills[].tool` 唯一。
 
 **rules.py 判定核心（语义精确版）**：
 
 ```python
 for rule in rule_set.rules:
-    if not matches(rule.when, proposal):
+    if not matches(rule.when, proposal, context):
         continue
     if rule.directive == "MUST_NOT":
         violations.append(Violation(layer="rules", rule_id=rule.id, directive=rule.directive,
                                     message=rule.message, evidence_path=rule.when))
     elif rule.directive == "MUST":
-        if rule.then is None or not matches({"all": [rule.then]}, proposal):
+        if rule.then is not None and not matches({"all": [rule.then]}, proposal, context):
             violations.append(Violation(layer="rules", rule_id=rule.id, ...))
+        else:
+            obligations.extend(rule.obligations)
     else:  # MAY
         notes.append(...)   # severity=note，不拦截
 blocked = any(v for v in violations if v.severity == "block")
@@ -174,11 +186,11 @@ blocked = any(v for v in violations if v.severity == "block")
 proc = next((p for p in rule_set.procedures if p.object_type == proposal.target.object_type), None)
 if proc is None:
     return []                       # 无 SOP 约束
-if proposal.procedure_state not in proc.steps:
-    return [Violation(layer="procedure", rule_id=proc.id, message=f"步骤 {proposal.procedure_state} 不在 SOP 中")]
+if context.procedure_state not in proc.steps:
+    return [Violation(layer="procedure", rule_id=proc.id, message=f"步骤 {context.procedure_state} 不在 SOP 中")]
 if proc.order_strict:
-    idx = proc.steps.index(proposal.procedure_state)
-    missing = [s for s in proc.steps[:idx] if s not in proposal.completed_steps]
+    idx = proc.steps.index(context.procedure_state)
+    missing = [s for s in proc.steps[:idx] if s not in context.completed_steps]
     if missing:
         return [Violation(layer="procedure", rule_id=proc.id, message=f"跳步：未完成 {missing}")]
 return []
@@ -190,13 +202,13 @@ return []
 class HarnessEngine:
     def __init__(self, rule_set: RuleSet): self.rule_set = rule_set
 
-    def evaluate(self, proposal: Proposal) -> Verdict:
+    def evaluate(self, proposal: Proposal, context: EvaluationContext) -> Verdict:
         layers = [("concept", check_concept), ("rules", check_rules),
                   ("procedure", check_procedure), ("skill", check_skill)]
         evaluated, violations = [], []
         for name, fn in layers:
             evaluated.append(name)
-            layer_violations = fn(self.rule_set, proposal)
+            layer_violations = fn(self.rule_set, proposal, context)
             violations.extend(layer_violations)
             if any(v.severity == "block" for v in layer_violations):
                 return Verdict(decision="BLOCK", violations=violations,
@@ -209,20 +221,20 @@ class HarnessEngine:
 
 **In scope：** FR-1~FR-12 全部；`tests/harness/testdata/` 至少 5 个 Proposal JSON 样本（覆盖各层 BLOCK 与 ALLOW）。
 
-**Out of scope（no-scope-creep）：** 不调用 P07 执行 Action（引擎只出 Verdict，提交执行是调用方职责）；不做 CEL/OPA/ rete 表达式引擎（YAML DSL 的 9 个操作符够 MVP，复杂表达式后续独立 plan）；不做规则版本管理 UI；不校验 claims 的真实性（P05 的 CitationValidator 负责）；不做技能超时的运行时 enforcement（`timeout_ms` 仅作为契约传给执行方）；不改 P03 的 `Ontology.validate()`（preconditions 格式校验已在 P03 实现，交叉校验用独立工具）。
+**Out of scope（no-scope-creep）：** 不调用 P07 执行 Action（引擎只出 Verdict/义务，审批和执行是 P07 职责）；不做 P09 主体授权；不做 CEL/OPA/rete 表达式引擎（YAML DSL 的 9 个操作符够 MVP，复杂表达式后续独立 plan）；不做规则版本管理 UI；不校验 claims 的真实性（P05 的 CitationValidator 负责）；不做技能超时的运行时 enforcement（`timeout_ms` 仅作为契约传给执行方）；不改 P03 的 `Ontology.validate()`（preconditions 格式校验已在 P03 实现，交叉校验用独立工具）。
 
 ## 验收标准（AC）
 
 | FR | AC | 验证方式 |
 |---|---|---|
-| FR-1/2 | `Proposal`/`Verdict` 可从 JSON round-trip（`model_validate_json` → `model_dump_json` 相等）；Verdict 含 rule_set_version、逐层 checks 和稳定 reason_code | `test_model.py` |
-| FR-3 | 未知 directive（`SHOULD`）、未知 op（`between`）、MUST 缺 `then`、重复 ID、悬空 depends_on、依赖环均抛 `ValidationError` 且消息含字段路径；构造互斥命中时 BLOCK 并列出双方规则 ID | `test_dsl.py::test_invalid_dsl` + `test_layers.py::test_conflict` |
-| FR-4 | 9 个操作符各一正一反用例；`parameters.amount` 缺失时 `gt` 返回 False；数值字符串 `"1200000"` 与 int 比较为 True（可转 float） | `test_dsl.py::test_ops`（≥18 断言） |
+| FR-1/2 | `Proposal`、`EvaluationContext` 与 `Verdict` 可从 JSON round-trip；Proposal 不接受流程/授权状态，Verdict 含 canonical proposal_hash、context_hash、context_version、rule_set_version、逐层 checks、obligations 和稳定 reason_code | `test_model.py` |
+| FR-3 | 未知 directive（`SHOULD`）、未知 op（`between`）、MUST 同时缺 `then` 和 `obligations`、非法 obligation、重复 ID、悬空 depends_on、依赖环均抛 `ValidationError` 且消息含字段路径；构造互斥命中时 BLOCK 并列出双方规则 ID | `test_dsl.py::test_invalid_dsl` + `test_layers.py::test_conflict` |
+| FR-4 | 9 个操作符各一正一反用例；`proposal.parameters.amount` 缺失时 `gt` 返回 False；数值字符串 `"1200000"` 与 int 比较为 True（可转 float）；流程路径只能从 `context.*` 解析 | `test_dsl.py::test_ops`（≥19 断言） |
 | FR-5 | `object_type: "InternalMemo"`（不在 allowed）→ BLOCK layer=concept；合法类型通过 | `test_layers.py::test_concept` |
-| FR-6 | VIP + freezeAccount 提案 → BLOCK（命中 vip-freeze-manual）；amount=1500000 且 approvalLevel=two_level → 该规则通过；amount=1500000 且无 approvalLevel → BLOCK（命中 large-amount-two-level） | `test_layers.py::test_rules`（3 用例） |
-| FR-7 | Transaction 提案 procedure_state=execute 但 completed_steps=[detect] → BLOCK（跳步）；completed_steps=[detect,assess,propose,approve] → 通过；无 SOP 的 object_type（如 Account）→ 直接通过 | `test_layers.py::test_procedure`（3 用例） |
+| FR-6 | VIP + freezeAccount 提案 → BLOCK（命中 vip-freeze-manual）；amount=1500000 → ALLOW 且产生 `required_approval_policy=two_level`；客户端无论省略还是伪造 `approvalLevel` 都不改变义务；多条审批义务命中时取更严格者并保留来源 rule IDs | `test_layers.py::test_rules` |
+| FR-7 | Transaction 的可信 context 为 procedure_state=execute、completed_steps=[detect] → BLOCK（跳步）；改为 completed_steps=[detect,assess,propose,approve] → 通过；篡改 Proposal/请求体中的同名字段不能改变结果；无 SOP 的 object_type（如 Account）→ 直接通过 | `test_layers.py::test_procedure`（4 用例） |
 | FR-8 | tools 含 `bash.exec`（不在白名单）→ BLOCK；`graph.neighbors` 入参缺 `object_id` → BLOCK；入参 max_hops=5（超上限）→ BLOCK；合法入参 → 通过 | `test_layers.py::test_skill`（4 用例） |
-| FR-9 | 概念层即 BLOCK 的提案，Verdict 的 `evaluated_layers == ["concept"]`（短路生效） | `test_engine.py::test_short_circuit` |
+| FR-9 | 概念层即 BLOCK 的提案，Verdict 的 `evaluated_layers == ["concept"]`（短路生效）；仅改变 context_version 或权威流程状态会改变 context_hash，且旧 Verdict 不可用于新上下文 | `test_engine.py::test_short_circuit` + `test_context_binding` |
 | FR-10 | AML 规则集加载零错误；`examples/harness_demo.py` 三个提案分别输出 ALLOW / BLOCK(rules) / BLOCK(skill) | `test_engine.py::test_aml_ruleset` + 运行示例 |
 | FR-11 | 构造 preconditions 含 `aml.rule.not-exist` 的本体 → `check_preconditions` 返回该 ID；AML 本体（若 P03 已交付 templates/finance/aml/ontology.yaml）返回空列表；P03 未交付时用 testdata 本体样本 | `test_crossref.py` |
-| FR-12 | `python -m agenticx_oag.harness check testdata/proposal_vip_freeze.json templates/finance/aml/harness.yaml` 输出 JSON 且 `decision=="BLOCK"` | 本地命令 |
+| FR-12 | `python -m agenticx_oag.harness check testdata/proposal_vip_freeze.json testdata/context_vip.json templates/finance/aml/harness.yaml` 输出 JSON 且 `decision=="BLOCK"` | 本地命令 |

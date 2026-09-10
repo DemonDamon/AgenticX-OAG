@@ -25,7 +25,7 @@ isProject: false
 - `docs/architecture.md` §2 总体架构：数据面（Go）明确列出「Action Gateway（事务/幂等）」；§2 关键模式「控制面编译、数据面执行」——本体 schema/审批策略在控制面定义（P03 的 `ActionType.approval_policy`），数据面 watch 执行。本 plan 落地数据面第一块。
 - `docs/architecture.md` §3 语言选型：Action Gateway、实时规则引擎归 Go——写路径吞吐 Go 10-20k TPS vs Python 2-5k TPS。
 - `docs/roadmap.md` Phase 3 交付物 1：Action 生命周期（提案→审批→执行→验证→归档）、幂等性（唯一 ID 重复执行无副作用）、回滚机制、沙箱执行。验收标准：bank-aml 场景走完「可疑交易识别 → 风险评估 → 冻结提案 → 审批 → 执行冻结 → 审计记录」全链路。
-- P02 plan 已锁定：`AuditSink.emit` 的事件结构与本 plan 对齐（`action_id/from/to/actor/ts/payload_hash`）；P03 的 `ActionType.preconditions` 是规则 ID 引用（P08 Harness 校验用，本 plan 不校验语义，只透传）。
+- P02 plan 已锁定：`AuditSink.emit` 的事件结构与本 plan 对齐（`action_id/from/to/actor/ts/payload_hash`）；P03 的 `ActionType.preconditions` 是规则 ID 引用。P08 负责规则语义求值，P07 不重复实现该语义，但必须通过 `GateAuthorizer` 取得可信结果并执行其义务。
 - 现状：仓库无任何 Go 代码。本 plan 建立第一个 Go module。
 
 ### 本体工程演进约束
@@ -37,6 +37,7 @@ isProject: false
 - 执行前校验前置条件，执行后校验后置条件与声明的状态变化；后置条件失败必须进入 FAILED，再依据 `compensation_action` 或 `rollback_sql` 补偿，不能把“SQL 返回成功”直接等价为业务成功。
 - 每次审批、规则判断、迁移、执行和补偿都记录 `reason_code`、`rule_ids`、`evidence_ids` 与主体信息，使 P09 能解释“为何允许/拒绝/回滚”，并能沿同一 action 重放完整决策链。
 - 增补契约/存储/执行器测试：Action 字段 round-trip；同 action_id 不同参数冲突；同幂等键并发只执行一次；前置条件失败零副作用；后置条件失败触发补偿；无补偿能力时保留可人工处置的 FAILED 状态。
+- Action Gateway 是写路径信任边界：`Propose`、`Decide`、`Execute` 必须分别调用可信的 `GateAuthorizer`，不得信任请求体自报的 P08 ALLOW、角色、审批层级或权限。P08 返回的审批义务只能提高 `ActionType.approval_policy` 的严格程度，不能证明审批已经完成。
 
 ## 需求定义
 
@@ -47,10 +48,10 @@ isProject: false
 - **FR-3 状态机**：`internal/action/machine.go` 定义 9 态状态机与合法迁移表（见「关键实现意图」）。所有状态变更经 `transition(actionID, to, actor)`，非法迁移返回 `ErrIllegalTransition`（不落库）。
 - **FR-4 PG 存储**：`internal/store/pg.go` 建表 `action_instances`（`action_id` 主键即幂等键，保存请求指纹与 Action 契约快照）与 `action_audit`（事件溯源，保存原因、规则和证据引用）。DDL 见「关键实现意图」，由 `store.EnsureSchema()` 在启动时执行（`CREATE TABLE IF NOT EXISTS`）。
 - **FR-5 幂等**：`action_id` 为协议幂等键，入库同时保存 `request_fingerprint = sha256(action_type + target_object_id + idempotency_scope + canonical(parameters_json))`。重复 `Propose` 同一 `action_id` 且指纹一致 → 返回已存在记录且 `already_exists=true`，不重复执行、不重复审计；同一 `action_id` 但指纹不同 → 返回 `AlreadyExists`/冲突错误且不泄露原参数。
-- **FR-6 审批编排**：按 `ActionType.approval_policy`（从 P02 proto 的本体定义加载，控制面传入本体 JSON）路由——`none`：Propose 后自动进入 APPROVED；`single`：进入 PENDING_APPROVAL，`Decide(approve=true)` 一次即 APPROVED；`two_level`：需两次不同 approver 的 `Decide(approve=true)`，任一 `Decide(approve=false)` → REJECTED 终态。
+- **FR-6 审批编排**：以 `ActionType.approval_policy` 为基线，归并 `GateAuthorizer.CheckPropose` 返回的 `required_approval_policy` 义务并取更严格者（`two_level > single > none`），将“契约要求/规则义务/最终策略”写入实例和审计。`none`：Propose 后自动进入 APPROVED；`single`：进入 PENDING_APPROVAL，且 `Decide` 先通过 `CheckApprove` 后一次同意才 APPROVED；`two_level`：需两次不同且各自有 `approve` 权限的 approver，同一主体重复同意不计数，任一有效拒绝 → REJECTED。请求参数中的 `approvalLevel` 不参与审批状态或策略计算。
 - **FR-7 执行器**：`internal/executor/` 定义 `Executor` interface（`Execute` / `Rollback`）。内置 `TemplateExecutor`：从 `templates/finance/aml/actions.yaml` 读 action_type → SQL 模板映射（模板可为普通 SQL 或 AGE 的 `SELECT * FROM cypher(...)` 包装 SQL，PG+AGE 同库直跑），参数占位符 `$1` 绑定 `parameters_json` 解析值。执行前运行只读 `precondition_sql`，执行后运行 `postcondition_sql`；任一条件不满足均记录稳定 `reason_code`。执行和后置条件均成功 → SUCCEEDED 并写 `result_json`；失败 → FAILED；再调用 `compensation_action` 或 `rollback_sql`（配置存在时成功补偿 → ROLLED_BACK；未配置则停在 FAILED）。
 - **FR-8 审计**：每次状态迁移写一条 `action_audit`（from/to/actor/payload_hash/reason_code/rule_ids/evidence_ids/ts）；`GetStatus` 返回记录含迁移历史。审计即事件流，供 P09 审计查询与 P10 溯源面板消费。
-- **FR-9 gRPC 服务**：`cmd/gateway/main.go` 启动 gRPC server（默认 `:7570`），`Propose` 前经 `auth.Authorizer` interface 校验 actor token（默认 `StaticTokenAuth`，token 从环境变量 `OAG_GATEWAY_TOKEN` 读；P09 完成后可替换实现，接口已留）。健康检查 `grpc_health_v1`。
+- **FR-9 认证与不可绕过门禁**：`cmd/gateway/main.go` 启动 gRPC server（默认 `:7570`）。`auth.Authenticator` 只负责从 token 得到可信 `subject_id/tenant_id`；`auth.GateAuthorizer` 定义 `CheckPropose / CheckApprove / CheckExecute`，返回 `GateDecision`（allowed、decision_id、reason_code、proposal/context 哈希与版本、harness/policy versions、rule_ids、obligations）。三个 RPC 在任何状态迁移或副作用前调用对应方法，deny 或 unavailable 均零写入；P07 校验门禁结果绑定当前 Proposal、可信上下文、主体和租户。生产默认 `DenyGate`；仅显式 `OAG_GATEWAY_GOVERNANCE_MODE=demo` 可启用 `DemoGate`，且必须输出“治理未接入”可观测信号。P09/编排层后续通过该接口接入，P07 不实现其策略语义。健康检查 `grpc_health_v1`。
 - **FR-10 首个 Action 模板**：`templates/finance/aml/actions.yaml` 定义 `freezeAccount`（`UPDATE customer SET status='frozen', updated_at=now() WHERE id=$1`，rollback `UPDATE customer SET status='active' WHERE id=$1`）与 `flagTransaction`（无 rollback，演示 FAILED 停留路径）。
 
 ### NFR（Non-Functional Requirements）
@@ -58,6 +59,7 @@ isProject: false
 - **NFR-1** `Propose` + `Execute`（approval=none）在本地 docker PG 下端到端 P95 < 50ms（不含审批等待）。
 - **NFR-2** 状态机迁移与审计写入在同一 PG 事务中（迁移成功但审计缺失视为 bug）。
 - **NFR-3** 单二进制交付：`go build ./cmd/gateway` 产出无 CGO 依赖二进制（architecture.md §3：静态编译对 10 企业交付友好）。
+- **NFR-4** 除显式 demo 模式外，GateAuthorizer 缺失、超时、版本不受支持或返回 unavailable 时，任何 Propose/Decide/Execute 均不得产生状态迁移或业务副作用；`GOVERNANCE_UNAVAILABLE` 与完成求值后的 `AUTHZ_DENIED` 分开记录。
 
 ## 精确落点
 
@@ -251,11 +253,49 @@ gateway:
 	cd dataplane && go build -o bin/gateway ./cmd/gateway
 ```
 
+**认证与门禁接口（`internal/auth/auth.go`）**：
+
+```go
+type Subject struct {
+    ID       string
+    TenantID string
+}
+
+type GateDecision struct {
+    Allowed         bool
+    DecisionID      string
+    ReasonCode      string
+    SubjectID       string
+    TenantID        string
+    ProposalHash    string
+    ContextHash     string
+    ContextVersion  string
+    HarnessVersion  string
+    PolicyVersion   string
+    RuleIDs         []string
+    ApprovalPolicy  string // "" | "single" | "two_level"，是待满足义务而非审批结果
+}
+
+type Authenticator interface {
+    Authenticate(ctx context.Context) (Subject, error)
+}
+
+type GateAuthorizer interface {
+    CheckPropose(ctx context.Context, subject Subject, proposal *actionv1.ActionProposal) (GateDecision, error)
+    CheckApprove(ctx context.Context, subject Subject, record *actionv1.ActionRecord) (GateDecision, error)
+    CheckExecute(ctx context.Context, subject Subject, record *actionv1.ActionRecord) (GateDecision, error)
+}
+```
+
+`Allowed=false` 表示可信策略完成求值后的拒绝；无法取得可信结果必须返回
+`ErrGovernanceUnavailable`，服务映射为独立 `GOVERNANCE_UNAVAILABLE` reason code。调用方传入的
+`actor/approver/caller` 字段不得覆盖 `Authenticator` 得到的 Subject；两者不一致直接拒绝。
+
 ## In scope / Out of scope
 
 **In scope：** FR-1~FR-10 全部；`dataplane/.gitignore`（bin/）；CI 增 Go job（`.github/workflows/ci.yml` 增 `cd dataplane && go vet ./... && go test ./...`）。
 
-**Out of scope（no-scope-creep）：** 不实现 Harness 语义校验（P08——本 plan 只透传 `justification` 字符串）；不做 P09 的 RBAC 决策（`Authorizer` 接口默认静态 token）；不做 Kafka 事件发布（`EventBus` 留接口位，Out）；不做沙箱执行（roadmap 提及的复用 AgenticX `safety/`，后续独立 plan）；不做 Ingestion Worker / WebSocket Hub（architecture.md 数据面其他组件）；不消费 P03 的 YAML（本体定义由调用方以 proto 消息传入，格式互不依赖，保证 P07 与 P03 可并行）。
+**Out of scope（no-scope-creep）：** 不实现 Harness 语义校验或 P09 RBAC 策略本体，只定义并强制调用 `GateAuthorizer`；不新增跨服务传输或签名收据协议；不做 Kafka 事件发布（`EventBus` 留接口位，Out）；不做沙箱执行（roadmap 提及的复用 AgenticX `safety/`，后续独立 plan）；不做 Ingestion Worker / WebSocket Hub（architecture.md 数据面其他组件）；不消费 P03 的 YAML（本体定义由调用方以 proto 消息传入，格式互不依赖，保证 P07 与 P03 可并行）。
 
 ## 验收标准（AC）
 
@@ -269,7 +309,7 @@ gateway:
 | FR-6 | `none`：Propose 后可直接 Execute；`single`：未 Decide 时 Execute 返回错误，Decide(true) 后成功；`two_level`：一次 Approve 后仍不可执行，第二次（不同 approver）后可执行；任一 Decide(false) → REJECTED | `service_test.go` 四分支 |
 | FR-7 | 前置条件失败时零写入；`freezeAccount` 执行且后置条件成立后 `customer.status='frozen'`；强制后置条件失败 → FAILED → 补偿成功后 ROLLED_BACK、状态还原；无补偿配置时停在 FAILED | `template_test.go` + integration |
 | FR-8 | 任一完整链路（propose→decide→execute）后 `action_audit` 行数 = 状态迁移次数，每行含 payload hash、reason_code 及规则/证据引用；`GetStatus().history` 与表内容一致 | integration 断言 |
-| FR-9 | 带 token 调用成功；错 token 返回 `PermissionDenied`；`grpcurl -plaintext localhost:7570 grpc.health.v1.Health/Check` 返回 SERVING | integration |
+| FR-9/NFR-4 | token 只能建立主体身份：正确 token 但 Gate deny 时仍 `PermissionDenied`；缺 Gate、Gate unavailable、版本不支持或绕过治理直调三个 RPC 均零状态迁移/零副作用；`Decide` 使用无 approve 权限主体不增加审批计数；demo 模式必须显式开启并输出“治理未接入”；健康检查返回 SERVING | `service_test.go` + integration |
 | FR-10 | `flagTransaction` 无 rollback：执行失败后停在 FAILED | integration |
 
 **integration 测试统一前置**：`docker compose -f docker-compose.dev.yml up -d`（P02 交付的 PG16+AGE）；Go 测试用 build tag 或 `testing.Short()` 跳过（`go test -short` 跳集成）。
