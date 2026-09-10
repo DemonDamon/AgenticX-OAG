@@ -12,7 +12,7 @@ isProject: false
 > Planned-with: glm 5.3
 > Suggested-Impl-Model: 代码专精中档偏强（Go 状态机与 DB 事务一致性需严谨；proto 与 SQL 契约已在 plan 写全，但并发/幂等细节需实施模型自行保证正确）
 
-**Goal:** 落地 L5 执行层的核心——Palantir 式 Action Gateway：Action 生命周期「提案 → 审批 → 执行 → 验证 → 归档」全链路，带幂等、回滚、逐迁移审计。这是「甩开 Semantica」的执行闭环能力，也是 P10 治理演示与 P11 Workshop Action 按钮的数据面后端。
+**Goal:** 落地 L5 执行层的核心——参考 Palantir 公开 Action 模型建设 Action Gateway：Action 生命周期「提案 → 审批 → 执行 → 验证 → 归档」全链路，带幂等、回滚、逐迁移审计。按仓库锁定源码，Semantica 已有图写入、决策记录、政策与批准链接口，但企业级外部写回治理闭环尚未得到证明；本 plan 以可运行实现和验收测试建立这一差异，也是 P10 治理演示与 P11 Workshop Action 按钮的数据面后端。
 
 **Architecture:** 控制面 Python / 数据面 Go 的语言分界落在本 plan（architecture.md §2-§3）：Go 服务消费 P02 的 `ontology.proto`（ActionType 定义）生成 Go 绑定，本 plan 新增 `action.proto` 定义运行时协议。状态机为单一事实：所有迁移走 `transition()` 函数（合法性表驱动），每次迁移写 PG `action_audit` 表（事件溯源语义）。执行器与审批源均为 Go interface，默认实现内置（SQL 模板执行器 + PG 审批单），企业差异（外部审批系统/工单）留在接口后面。
 

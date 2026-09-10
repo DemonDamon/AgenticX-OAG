@@ -12,7 +12,7 @@ isProject: false
 > Planned-with: glm 5.3
 > Suggested-Impl-Model: 代码专精中档偏强（DSL 语义必须一次定准无歧义；条件求值器需完备单测；校验顺序与短路语义是正确性关键）
 
-**Goal:** 落地项目既有治理双维度中的**语义约束维度**（`docs/enterprise-landing.md` §3.1）：Agent/LLM 生成的「提案」（Proposal）在执行前必须依次通过概念层 → 规则层 → 流程层 → 技能层四道校验，任何一层 BLOCK 即拦截，实现「先校验后执行」。这是项目相对纯检索方案的核心差异——治理的是 LLM 的生成过程，不是确定性代码。
+**Goal:** 落地项目既有治理双维度中的**语义约束维度**（`docs/enterprise-landing.md` §3.1）：Agent/LLM 生成的「提案」（Proposal）在执行前必须依次通过概念层 → 规则层 → 流程层 → 技能层四道校验，任何一层 BLOCK 即拦截，实现「先校验后执行」。按当前公开资料核验，Semantica 主要覆盖知识图谱、本体与检索能力；本 plan 计划形成的差异化能力是 Agent 提案执行前的运行时门禁。
 
 **Architecture:** 纯 Python 库（控制面），无 IO 依赖：输入是结构化 `Proposal`（pydantic）+ 规则集（YAML DSL），输出是 `Verdict`（ALLOW/BLOCK + 命中违规明细）。四层校验器各自独立成模块，`HarnessEngine` 按固定顺序编排并短路。规则 ID 与 P03 `ActionType.preconditions` 对齐（P03 做格式校验，本 plan 提供规则本体与交叉校验工具）。校验通过的 Proposal 由调用方（P10 Demo / 未来 Agent Runtime）提交给 P07 Action Gateway 执行——本 plan 不调用 P07，两者通过 Proposal JSON schema 契约解耦、可并行开发。
 
@@ -24,6 +24,7 @@ isProject: false
 
 - `docs/enterprise-landing.md` §3.1 治理双维度：Agent Harness 四层（语义约束维度）——概念层（认知边界：Agent 能讨论什么）/ 规则层（MUST·MUST_NOT·MAY 行为准则）/ 流程层（SOP 步骤不可跳过不可乱序）/ 技能层（工具白名单 + 输入输出契约 + 超时重试）。LLM 提案先过四层校验，任何一层 BLOCK 即拦截。
 - `docs/enterprise-landing.md`：项目将确定性 Action 执行治理与概率性 LLM 提案治理分层，是本 plan 的设计依据。
+- Semantica 锁定公开源码还包含规则推理、决策记录、政策、批准链与可选溯源，因此不能将其泛化为“纯检索方案”；本 plan 仅主张补充该源码基线尚未证明的逐主体授权、企业审批与执行前门禁闭环。
 - `docs/roadmap.md` Phase 3 交付物 5「规则引擎集成」：确定性规则与本体绑定（某类对象必须满足某条件才能执行某 Action），轻量 forward chaining 优先。
 - P02 plan 已锁定：proto 中 `ActionType.preconditions` 是规则 ID 列表（P08 Harness 规则）；P03 plan 的 FR-3 声明 preconditions「允许前向引用 P08 规则 ID，仅做格式校验」——即本 plan 是这些 ID 的定义方。
 - 维修工卡、用药禁忌等公开可复核场景说明「先校验后执行」适合作为 Agent 治理层的落地形态；bank-aml 场景的 VIP 冻结人工复核、大额两级审批是首批规则集素材，具体规则仍须由业务与合规负责人确认。

@@ -1,6 +1,6 @@
 # AgenticX-OAG 产品路线图
 
-> 目标：以 AgenticX 为基座，打造可对标 Palantir Foundry Ontology、能力覆盖并超越 Semantica 的开源本体增强生成系统。
+> 目标：以 AgenticX 为基座，参考 Palantir Foundry Ontology 与 Semantica 的公开能力，构建开源本体增强生成系统，并重点补齐 Agent 提案运行时治理闭环。
 >
 > 版本：v0.1（2026-09）
 > 维护者：AgenticX-OAG 团队
@@ -32,20 +32,20 @@
 | `agents/` | 多 Agent 编排 | 本体感知 Agent、治理 Agent、研究 Agent |
 | `observability/` | 可观测性 | 决策溯源、审计回放、PROV-O 兼容 |
 
-**核心结论：不要从零造引擎。AgenticX 已有 L1–L3 的大部分地基，AgenticX-OAG 专注做 L4 本体层 + L5 治理层 + L6 应用层——这三层是 Semantica 做不好、Palantir 最值钱的地方。**
+**核心结论：不要从零造引擎。AgenticX 已有 L1–L3 的大部分地基，AgenticX-OAG 专注做 L4 本体层 + L5 治理层 + L6 应用层。按仓库锁定源码，Semantica 已覆盖知识图谱、本体、检索、规则推理、决策记录与可选溯源；企业级授权、审批和外部写回闭环尚未被该基线证明。本项目应把后者作为待实现、待验证的差异化方向。**
 
 ### 1.2 对标框架
 
 | 层 | Palantir Foundry | Semantica | AgenticX 现有 | AgenticX-OAG 目标 |
 |---|---|---|---|---|
 | L6 应用层 | Workshop / Quiver / Object Explorer | Explorer / MCP | Studio / Skills | **Ontology Workshop（低代码搭建）** |
-| L5 治理层 | Actions / Functions / 动态安全 / 治理 | 无（MCP 无鉴权） | safety 框架 | **Action Gateway + 四权矩阵 + 审批流** |
+| L5 治理层 | Actions / Functions / 动态安全 / 治理 | 决策/政策/批准链接口；锁定的 MCP 入口未见逐用户鉴权 | safety 框架 | **Action Gateway + 四权矩阵 + 审批流** |
 | L4 本体层 | Object types / Link types / Properties | Ontology / OWL / SHACL | 无（只有 graph schema） | **Ontology Model + Context Pack + 方法记忆** |
 | L3 检索层 | Foundry 检索 / Ontology 驱动查询 | GraphRAG / 多跳查询 | retrieval（图/向量/BM25/混合） | **本体引导混合检索 + 来源追踪** |
 | L2 知识层 | Foundry 数据 + 本体映射 | KG / Context Graph | knowledge/graphers | **KG + 本体融合构建器** |
 | L1 接入层 | 数据源 / Pipeline | ingest / parse / split | knowledge/readers | **本体感知接入 + 增量同步** |
 
-**差异化护城河 = L5 治理闭环 + L4 方法记忆 + L6 低代码 Workshop**。这三样 Semantica 没有，Palantir 有但闭源。
+**计划差异化 = L5 治理闭环 + L4 方法记忆 + L6 低代码 Workshop**。这是项目路线图，不等同于已实现能力；与 Semantica、Palantir 的差异须按公开资料和实际评测逐项确认。
 
 ---
 
@@ -82,7 +82,7 @@
 
 ### Phase 1：本体引擎 + 知识图谱构建（4 周）
 
-**目标：L1 + L2 跑通，能把真实数据变成 KG + 本体，替代 Semantica 的核心功能。**
+**目标：L1 + L2 跑通，能把真实数据变成 KG + 本体，并与 Semantica 已公开的相关能力建立可复现对照。**
 
 交付物：
 
@@ -146,7 +146,7 @@
 
 ### Phase 3：治理闭环 + Action Gateway（6 周）
 
-**目标：L5 完成，这是对标 Palantir、甩开 Semantica 的核心差异化。**
+**目标：L5 完成，形成 Agent 提案运行时门禁与受控 Action 闭环，并与 Palantir、Semantica 的公开能力逐项对照验证。**
 
 交付物：
 
@@ -185,7 +185,7 @@
 
 ### Phase 4：方法记忆 + 分析模板（4 周）
 
-**目标：L4 下半部分，这是 Semantica 和 Palantir 都没有的差异化能力。**
+**目标：L4 下半部分，形成项目自有的方法记忆能力；是否构成相对 Semantica 或 Palantir 的差异，需按届时公开能力核验。**
 
 灵感来源：Palantir AIP Analyst 的 Skills + Analysis Lookup 更新（2026-08）。
 
@@ -260,7 +260,7 @@
 
 ---
 
-## 三、与 Semantica 的对标策略
+## 三、与 Semantica 的公开能力比较策略
 
 ### 3.1 哪些可以借鉴 Semantica
 
@@ -274,19 +274,19 @@
 | `storage` | 复用 AgenticX 存储 + Oxigraph | 不造轮子 |
 | `mcp` | 后做，Phase 6 | 先有核心能力再暴露 |
 
-### 3.2 我们比 Semantica 强在哪里
+### 3.2 计划形成的差异化能力
 
-1. **Agent-native**：Semantica 是被动库，等 Agent 来调。我们是 AgenticX 原生能力，进程内访问 memory/safety/observability，零 RPC 开销。
-2. **治理闭环**：Semantica 明确没有 Action 治理、没有鉴权、没有审批流。这是 Palantir 最值钱的部分，也是我们的护城河。
-3. **方法记忆**：Semantica 的 decision record 只记「做了什么」，我们记「怎么做的」并且可以复用为模板。
-4. **低代码应用层**：Semantica 只有 Explorer 仪表盘，我们有 Workshop 级别的应用搭建能力。
+1. **AgenticX 原生集成**：计划以内嵌扩展接入 memory/safety/observability；是否优于 Semantica 的 MCP、服务或库式接入，需要基准测试，不能由架构形态直接推断。
+2. **治理闭环**：Semantica 锁定源码包含决策记录、政策、批准链与可选溯源，但未证明具备逐用户授权、企业审批和外部写回网关的完整闭环。本项目计划补齐 Agent 提案运行时门禁与 Action 治理。
+3. **方法记忆**：Semantica 已提供决策记录和先例查询；本项目计划进一步验证可复用的方法模板，差异以数据模型与评测结果为准。
+4. **低代码应用层**：Semantica 公开了 Explorer；本项目计划建设 Ontology Workshop，目前仍是路线图能力。
 5. **研究方法论**：整个仓库的研究资产本身就是壁垒——知道「为什么这么设计」比「有代码」更难复制。
 
 ### 3.3 为什么不用 Semantica 做底座
 
 - 依赖太重：`all` extra 含 torch/transformers 全家桶，AgenticX 是轻量依赖哲学
-- 架构不匹配：Semantica 是独立服务思维，我们要进程内嵌入
-- 治理层空白：Semantica 没有的恰恰是我们最核心的差异化
+- 集成边界不同：Semantica 同时提供 Python 包、服务、Explorer 与 MCP 等入口；本项目优先采用 AgenticX 进程内扩展
+- 治理目标不同：本项目计划把逐主体授权、企业审批、运行时门禁与外部写回纳入同一闭环
 - 控制权：核心本体引擎不能依赖第三方项目的路线图
 
 **正确姿势：参考 Semantica 的 API 设计和模块划分，但代码自己写，站在 AgenticX 肩膀上。**
@@ -312,14 +312,14 @@
 | 阶段 | 时长 | 核心交付 | 对标状态 |
 |---|---|---|---|
 | Phase 0 | 2 周 | Python 包骨架 + 本体数据模型 + 测试基线 | 工程化就绪 |
-| Phase 1 | 4 周 | 本体引擎 + KG 构建 + Oxigraph 存储 | ≈ Semantica 核心能力 |
-| Phase 2 | 4 周 | OAG 检索 + Context Pack + 评测框架 | > Semantica GraphRAG |
-| Phase 3 | 6 周 | Action Gateway + 四权鉴权 + 审批 + 溯源 | **超越 Semantica，接近 Palantir 治理层** |
-| Phase 4 | 4 周 | 方法记忆 + 分析模板 + Analysis Lookup | **Semantica 和 Palantir 都没有** |
+| Phase 1 | 4 周 | 本体引擎 + KG 构建 + Oxigraph 存储 | 与 Semantica 相关能力建立对照基线 |
+| Phase 2 | 4 周 | OAG 检索 + Context Pack + 评测框架 | 与 Semantica GraphRAG 做可复现评测 |
+| Phase 3 | 6 周 | Action Gateway + 四权鉴权 + 审批 + 溯源 | **形成独立治理闭环，并按公开能力对照验证** |
+| Phase 4 | 4 周 | 方法记忆 + 分析模板 + Analysis Lookup | **形成项目自有能力，差异待评测** |
 | Phase 5 | 8 周 | Ontology Workshop 低代码平台 | 对标 Palantir Workshop |
 | Phase 6 | 持续 | 生态 + 规模化 + 企业特性 | 平台级产品 |
 
-**总计：28 周（约 7 个月）到 Phase 5，具备对标 Palantir 的完整产品形态。**
+**总计：28 周（约 7 个月）到 Phase 5，形成覆盖本体、检索、治理与应用层的计划产品形态；与 Palantir 的能力差距仍须按公开接口和验收结果逐项评估。**
 
 **最快验证路径：Phase 0 + Phase 1 + Phase 2 = 10 周，做出可用的 OAG 引擎并证明比 RAG 好。**
 
@@ -330,8 +330,7 @@
 1. **建 `agenticx_oag/` 包骨架**，`pyproject.toml` + 目录结构 + 空模块
 2. **写 Ontology 核心模型**（Pydantic），从 bank-aml 场景的 JSON 反推
 3. **搭测试框架**，pytest + 第一个测试用例
-4. **修正主调研报告**中 Semantica 已剔除的过时结论（它很活跃，v0.6.6）
-5. **把 Phase 0 拆成具体任务**，分配到 issue / 看板
+4. **把 Phase 0 拆成具体任务**，分配到 issue / 看板
 
 ---
 

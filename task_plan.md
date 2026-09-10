@@ -1,6 +1,6 @@
 # AgenticX-OAG 任务计划
 
-> 目标：以 AgenticX 为基座，打造可对标 Palantir Foundry Ontology、能力覆盖并超越 Semantica 的开源本体增强生成系统。
+> 目标：以 AgenticX 为基座，参考 Palantir Foundry Ontology 与 Semantica 的公开能力，构建开源本体增强生成系统，并重点补齐 Agent 提案运行时治理闭环。
 >
 > 详细路线图见 [docs/roadmap.md](docs/roadmap.md)
 
@@ -61,8 +61,8 @@
 | 主语言 | Python | 与 AgenticX 同语言，进程内集成，AI 生态全 | 2026-09-02 |
 | 图存储 | Oxigraph（Rust，pyoxigraph 绑定） | RDF/SPARQL 原生，本体友好，性能好 | 2026-09-02 |
 | 向量存储 | 复用 AgenticX 已有后端 | 不造轮子，保持轻量 | 2026-09-02 |
-| 是否基于 Semantica | 否，参考但自研 | 依赖重、架构不匹配、治理层空白 | 2026-09-02 |
-| 核心差异化 | 治理闭环 + 方法记忆 + 低代码 Workshop | Semantica 没有，Palantir 闭源 | 2026-09-02 |
+| 是否基于 Semantica | 否，参考但自研 | 完整依赖面较重、与 AgenticX 进程内扩展边界不同；企业治理闭环需由本项目独立实现和验证 | 2026-09-02 |
+| 计划差异化 | 治理闭环 + 方法记忆 + 低代码 Workshop | Semantica 已公开知识、本体、检索与决策记录等能力；本项目重点验证运行时门禁和受控写回 | 2026-09-02 |
 
 ---
 

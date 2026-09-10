@@ -83,7 +83,7 @@ Palantir 的 Ontology 一句话定位：**把企业分散的数据、业务规�
 
 以下清单按能力层对齐，所有仓库均经 GitHub API / PyPI / Maven 实时核实（核实日期 2026-08-14），标注版本号、License、Star 数与集成复杂度评级。
 
-> ⚠️ **存疑剔除**：原清单中的 `Semantica`（时态上下文图）与 `AWS Semantic Layer Accelerator`（本体构建加速器）经 GitHub 全站检索未发现活跃开源仓库，已剔除。时态图能力由 `getzep/graphiti`（29.9K★）覆盖；语义层加速由 `databrickslabs/ontobricks`（Databricks Labs 官方）替代。
+> **更正（以后续源码核验为准）**：`Semantica` 是公开且仍在维护的开源项目，不能归类为“纯检索方案”或仅视作时态上下文图。仓库的锁定源码审阅显示，它覆盖知识图谱、本体、检索、规则推理、决策记录、可选 PROV-O 溯源及 MCP 等入口；逐主体授权、企业审批与外部写回网关的完整闭环尚未由该源码基线证明。由于它是跨能力层的聚合平台，以下组件级清单不以单行替代其完整评估，详见 `research/codedeepresearch/semantica/` 与开源工具生态报告。`AWS Semantic Layer Accelerator` 的旧名称也不再作为已核验项目使用；AWS 相关公开实现须按其当前项目名称与来源另行核验。
 
 ### 2.1 开源仓库核实清单（含版本 / License / Star / 集成复杂度）
 

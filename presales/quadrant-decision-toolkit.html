@@ -490,7 +490,7 @@ var QUADRANTS = {
       "查询层：SPARQL Endpoint（含 CONSTRUCT / ASK 推理查询）",
       "存储层：三元组存储 Stardog / GraphDB / Jena"
     ],
-    roleQuote: "§一点五原文：「不自研。留标准接口（RDF 导入/导出），需要推理的客户接 HermiT/Pellet 类生态」",
+    roleQuote: "产品口径：不自研 OWL 推理引擎；保留 RDF 导入/导出接口，按需接入 HermiT/Pellet 类生态",
     sell: "本象限不卖产品——不是我们要赢的战场",
     notSell: "不自研 OWL 推理引擎，不硬上概念推理场景",
     eco: "留标准 RDF 导入/导出接口；需要推理的客户接 HermiT/Pellet 类生态（转生态合作）",
@@ -509,7 +509,7 @@ var QUADRANTS = {
       "应用层：图可视化 / 图算法 API（关联分析、推荐）",
       "存储层：图数据库 Neo4j / NebulaGraph / TigerGraph"
     ],
-    roleQuote: "§一点五原文：「自建，复用 AgenticX knowledge/graphers。CWA 与 PG+AGE 技术选型天然匹配」",
+    roleQuote: "产品口径：自建 KG Schema 能力，复用 AgenticX knowledge/graphers，并以 PG+AGE 作为候选存储",
     sell: "自建 KG Schema 能力，复用 AgenticX knowledge/graphers",
     notSell: "—（本象限为自建主场，无让渡项）",
     eco: "CWA 与 PG+AGE 技术选型天然匹配（存储复用 PostgreSQL + Apache AGE 图生态）",
@@ -528,10 +528,10 @@ var QUADRANTS = {
       "应用层：Workshop / AIP / Agent / OSDK（操作决策）",
       "数据层：Data Connection（Foundry Pipeline / 虚拟化映射）"
     ],
-    roleQuote: "§一点五原文：「核心对标。Action Gateway + Function + Writeback 是最值钱的部分」",
-    sell: "Action Gateway + Function + Writeback——核心对标 Palantir，最值钱的部分",
+    roleQuote: "产品口径：参考 Palantir 公开操作层模型，建设 Action Gateway + Function + Writeback",
+    sell: "Action Gateway + Function + Writeback——项目重点建设的执行闭环",
     notSell: "—（核心自研能力位）",
-    eco: "—（对标 Palantir Foundry / AIP 的能力位，开源平替路线）",
+    eco: "参考 Palantir Foundry / AIP 的公开能力模型；是否达到对应能力以实现和测试为准",
     pocType: "操作闭环型 POC",
     pocDesc: "选一个 Action 真实改变业务对象状态的流程（含审批 / 回滚），跑通 Object → Action → Writeback 闭环，验证状态迁移的一致性与可回滚性。"
   },
@@ -547,10 +547,10 @@ var QUADRANTS = {
       "约束层：Rule + Constraint（行为白名单 / 禁止规则 / 审计）",
       "应用层：LLM + Tool Use / 多轮对话（Agent 任务执行）"
     ],
-    roleQuote: "§一点五原文：「核心差异化。治理 LLM 决策过程本身，Semantica 没有、Palantir AIP 不外售」",
-    sell: "治理 LLM 决策过程本身——核心差异化",
+    roleQuote: "产品口径：把确定性 Action 的执行治理与概率性 LLM 的提案治理分层",
+    sell: "Agent 提案执行前的运行时门禁——计划形成的核心差异化",
     notSell: "—（治理层不直接写业务数据，旁路校验）",
-    eco: "—（竞争空档：Semantica 没有此能力、Palantir AIP 不外售）",
+    eco: "Semantica 已覆盖知识、本体、检索与决策记录等能力；本项目计划补充逐主体授权、企业审批与受控写回闭环",
     pocType: "治理型 POC",
     pocDesc: "拿一个高危 Agent 场景（退款 / 派工 / 用药），跑通「调用 Action 前先过约束校验 → 允许 / 拒绝 + 审计留痕」，用拦截正确率与审计完备性说话。"
   }
@@ -569,22 +569,22 @@ var QUESTIONS = [
 
 /* 16 场景：项目按常见业务需求独立整理；选型结果需结合现场约束验证 */
 var SCENARIOS = [
-  { no: 1,  scene: '跨系统产品分类对齐', need: '概念映射与蕴含', onto: 'Semantic Ontology', quadrant: 'semantic', reason: '需要用标准词汇和形式关系统一多个系统的分类口径' },
+  { no: 1,  scene: '临床术语标准化',   need: '概念分类推理',   onto: 'Semantic Ontology', quadrant: 'semantic', reason: '需要用标准医学术语和形式化关系判断概念层级与继承关系' },
   { no: 2,  scene: '反欺诈关联分析',   need: '多跳关系检索',   onto: 'KG Schema',         quadrant: 'kg',       reason: '需要沿客户、账户、终端和交易关系追查异常关联路径' },
-  { no: 3,  scene: '供应商风险网络',   need: '依赖路径分析',   onto: 'KG Schema',         quadrant: 'kg',       reason: '需要查询企业、股权、合同和供货关系形成的风险传播链' },
-  { no: 4,  scene: '异常订单处置',     need: '受控状态变更',   onto: 'Palantir Ontology', quadrant: 'palantir', reason: '处置动作会改变订单状态，并要求幂等、审批和补偿记录' },
-  { no: 5,  scene: '现场检修助手',     need: '工具授权与留痕', onto: 'Agent Ontology',    quadrant: 'agent',    reason: '读取工单、调用诊断和提交结果需要分级授权与完整审计' },
-  { no: 6,  scene: '客户服务退款助手', need: '金额与角色约束', onto: 'Agent Ontology',    quadrant: 'agent',    reason: '退款提案应按金额阈值、操作者角色和审批状态进行拦截' },
-  { no: 7,  scene: '数据标准一致性检查', need: '形式约束校验',  onto: 'Semantic Ontology', quadrant: 'semantic', reason: '需要检查概念层级、互斥关系和跨词表映射是否一致' },
-  { no: 8,  scene: '库存调拨闭环',     need: '事务与补偿',     onto: 'Palantir Ontology', quadrant: 'palantir', reason: '调拨涉及库存对象写回，失败时必须可追踪并执行补偿流程' },
-  { no: 9,  scene: '设备派工助手',     need: '流程与技能约束', onto: 'Agent Ontology',    quadrant: 'agent',    reason: 'Agent 必须遵循派工步骤，并且只能使用获准的业务工具' },
-  { no: 10, scene: '高风险内容发布助手', need: '审批前置',     onto: 'Agent Ontology',    quadrant: 'agent',    reason: '对外发布前需要规则校验、人工复核和可回放的决策记录' },
-  { no: 11, scene: '客户与合同关系查询', need: '实体路径查询',  onto: 'KG Schema',         quadrant: 'kg',       reason: '核心问题是跨组织、联系人、合同和项目的关联检索' },
-  { no: 12, scene: '复杂产品配置',     need: '兼容性推理',     onto: 'Semantic Ontology', quadrant: 'semantic', reason: '组件之间存在依赖、排斥和继承关系，需要一致性推理' },
-  { no: 13, scene: '采购申请执行流',   need: '状态机与审批',   onto: 'Palantir Ontology', quadrant: 'palantir', reason: '申请、审核、下单和撤销应通过类型化 Action 推进状态' },
-  { no: 14, scene: '代码维护助手',     need: '沙箱与工具白名单', onto: 'Agent Ontology',   quadrant: 'agent',    reason: '文件写入、命令执行和外部访问需要按策略授权并记录轨迹' },
-  { no: 15, scene: '政策条款一致性分析', need: '规则关系推理',  onto: 'Semantic Ontology', quadrant: 'semantic', reason: '需要表达条款的适用范围、例外和概念关系后再进行推理' },
-  { no: 16, scene: '售后服务助手',     need: '知识检索与行动治理', onto: 'Agent Ontology + KG', quadrant: 'combo', reason: '知识问答依赖关联检索，改约、退款等动作另由权限和审批约束' }
+  { no: 3,  scene: '航线网络优化',     need: '图拓扑分析',     onto: 'KG Schema',         quadrant: 'kg',       reason: '机场与航线构成网络，需要路径、中心性或社区等图分析能力' },
+  { no: 4,  scene: '运行控制决策',     need: '状态迁移与审批', onto: 'Palantir Ontology', quadrant: 'palantir', reason: '运行状态变更需要由类型化 Action 推进，并保留审批、幂等和补偿记录' },
+  { no: 5,  scene: '维修工卡 Agent',   need: '工具授权与留痕', onto: 'Agent Ontology',    quadrant: 'agent',    reason: '读取工卡、调用诊断和提交维修结果需要分级授权与完整审计' },
+  { no: 6,  scene: '投顾 Agent',       need: '适当性与合规约束', onto: 'Agent Ontology',  quadrant: 'agent',    reason: '投资建议提案需要经过客户适当性、产品范围和人工复核规则校验' },
+  { no: 7,  scene: '适航审查知识管理', need: '法规关系推理',   onto: 'Semantic Ontology', quadrant: 'semantic', reason: '适航条款存在概念层级、引用和例外关系，需要明确的逻辑语义' },
+  { no: 8,  scene: '供应链调度',       need: '操作闭环',       onto: 'Palantir Ontology', quadrant: 'palantir', reason: '订单、库存和物流状态需要受控写回，失败时还要可追踪和补偿' },
+  { no: 9,  scene: '设备维修 Agent',   need: '流程与技能约束', onto: 'Agent Ontology',    quadrant: 'agent',    reason: 'Agent 必须遵循诊断和派工步骤，并且只能使用获准的业务工具' },
+  { no: 10, scene: '诊疗辅助 Agent',   need: '安全与复核约束', onto: 'Agent Ontology',    quadrant: 'agent',    reason: '诊疗或用药提案需要禁忌校验、适用范围检查和人工复核，不可直接执行' },
+  { no: 11, scene: '企业知识图谱构建', need: '实体关联查询',   onto: 'KG Schema',         quadrant: 'kg',       reason: '核心需求是跨人员、组织、项目和产品查询多跳关联' },
+  { no: 12, scene: '产品配置约束校验', need: '逻辑一致性',     onto: 'Semantic Ontology', quadrant: 'semantic', reason: '配置项之间存在依赖、互斥和继承关系，需要进行一致性推理' },
+  { no: 13, scene: '订单全流程管理',   need: '状态机与事务',   onto: 'Palantir Ontology', quadrant: 'palantir', reason: '订单从创建到履约需要通过 Action 推进状态，并保证写回一致性' },
+  { no: 14, scene: '代码生成 Agent',   need: '沙箱与工具白名单', onto: 'Agent Ontology',  quadrant: 'agent',    reason: '文件写入、命令执行和外部访问需要按策略授权并记录轨迹' },
+  { no: 15, scene: '法规合规检查',     need: '规则关系推理',   onto: 'Semantic Ontology', quadrant: 'semantic', reason: '需要表达条款的适用范围、引用和例外关系后再判断一致性' },
+  { no: 16, scene: '智能客服 Agent',   need: '知识检索与行动治理', onto: 'Agent Ontology + KG', quadrant: 'combo', reason: '知识问答依赖关联检索，退款、改签等动作另由权限和审批约束' }
 ];
 
 /* 四类选型风险：项目结合自身架构边界独立整理 */

@@ -72,7 +72,7 @@ const QUESTIONS = [
 
 ```js
 const SCENARIOS = [
-  { no: 1, scene: "跨系统产品分类对齐", need: "概念映射与蕴含", quadrant: "semantic", reason: "使用标准词汇和形式关系统一多个系统的分类口径" },
+  { no: 1, scene: "临床术语标准化", need: "概念分类推理", quadrant: "semantic", reason: "使用标准医学术语和形式化关系判断概念层级与继承关系" },
   { no: 2, scene: "反欺诈关联分析", need: "多跳关系检索", quadrant: "kg", reason: "沿客户、账户、终端和交易关系追查异常关联路径" },
   // ...共 16 行；组合场景显式标记 quadrant 为 "combo"
 ];
