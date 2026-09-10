@@ -21,8 +21,8 @@ P02-P06 已完成，项目已经具备本体模型、知识图谱构建、OAG �
 |---|---|---|---|---|---|
 | OE-01 | Action 契约补全：前后置条件、状态变化、幂等键、副作用、补偿动作 | `docs/architecture.md`、RFC 8785 | S1/S2/S4 | P07 | pending |
 | OE-02 | Action Gateway：提案→审批→执行→验证→归档，迁移与审计同事务 | `docs/roadmap.md` Phase 3 | S1 | P07 | pending |
-| OE-03 | Harness 四层门禁与确定性规则 DSL | `docs/enterprise-landing.md` §3.1、JSON Schema | S1/S2/S3 | P08 | pending |
-| OE-04 | 四权矩阵、对象级授权和无授权命中时拒绝 | NIST RBAC、`docs/architecture.md` 多租户原则 | S1/S2/S3 | P09 | pending |
+| OE-03 | Harness 四层门禁与确定性规则 DSL；Proposal 与可信 EvaluationContext 分离 | `docs/enterprise-landing.md` §3.1、JSON Schema | S1/S2/S3/S4 | P08 | pending |
+| OE-04 | 四权矩阵、基于可信对象快照的条件授权和无授权命中时拒绝 | NIST RBAC、`docs/architecture.md` 多租户原则 | S1/S2/S3/S4 | P09 | pending |
 | OE-05 | 决策链：检索→主张→规则→提案→审批→Action→结果 | W3C PROV-O | S1/S2/S4 | P09 | pending |
 | OE-06 | 数据卡、来源等级、冲突报告、增量同步和入库质量门禁 | W3C SHACL、P04/P06 现有能力 | S1/S2/S4 | 后续 P12+（基于 P04） | backlog |
 | OE-07 | AML 场景包：ontology/actions/policy/harness/seed/golden set | `docs/architecture.md` Industry Pack | S1/S4 | P10 | pending |
@@ -75,4 +75,5 @@ P02-P06 已完成，项目已经具备本体模型、知识图谱构建、OAG �
 - P09：[治理、审计与回放 plan](../.cursor/plans/pending/2026-09-03-governance-rbac-audit.plan.md)
 - P10：[AML POC plan](../.cursor/plans/pending/2026-09-03-aml-poc-demo-web.plan.md)
 - P11：[Workshop MVP plan](../.cursor/plans/pending/2026-09-03-workshop-lowcode-mvp.plan.md)
+- 治理边界：[从 Agent 提案到 Action](../research/05-agent-harness-and-runtime-governance/deliverables/proposal-to-action-governance-boundary.md)
 - 研究总索引：[research/README.md](../research/README.md)

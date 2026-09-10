@@ -60,4 +60,7 @@
 
 业务对象和 Action 的平台语义进入 `02`，Context Pack 的构造进入 `03`，领域规则的生产与执行进入 `04`。
 
+## 已审核交付物
 
+- [`deliverables/proposal-to-action-governance-boundary.md`](deliverables/proposal-to-action-governance-boundary.md)：基于公开标准和官方资料，明确 P08 提案门禁、P09 对象级授权、P07 审批与 Action 执行之间不可互相替代的职责；补充 Proposal/可信上下文分离、可信对象快照、防绕过接口和验收矩阵。
+- [`deliverables/semantica-static-code-review.md`](deliverables/semantica-static-code-review.md)：固定公开源码版本的静态能力审阅与集成边界。
